@@ -197,7 +197,7 @@ if __name__ == "__main__":
                             xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]]
                             j += 1
 
-                f5 = h5.File('data_som3d_clusters_{}.h5'.format(lap), 'w')
+                f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
                 dsetx = f5.create_dataset("cluster_id",  data=cluster_id)
                 f5.close()
                 print("Done writing the cluster ID file")
