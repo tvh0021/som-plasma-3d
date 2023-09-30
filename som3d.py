@@ -82,7 +82,7 @@ if __name__ == "__main__":
         nx,ny,nz = 128,128,128
 
         if True:
-                f5 = h5.File('data_features_3dfull_{}.h5'.format(lap), 'r')
+                f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
                 x = f5['features'][()]
                 y = f5['target'][()]
                 feature_list = f5['names'][()]
@@ -116,9 +116,11 @@ if __name__ == "__main__":
 
         labels = [str(xxx) for xxx in range(len(x))]
         m.fit(attr,labels)
-        m.starburst()
+        # m.starburst()
 
-        m.significance()
+        # m.significance()
+
+        print(m.convergence())
 
         #Data matrix with neuron positions:
         data_matrix=m.projection()
