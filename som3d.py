@@ -152,7 +152,7 @@ if __name__ == "__main__":
                         centr_locs.append((cx,cy))
 
         unique_ids = list(set(centr_locs))
-        print(unique_ids)
+        # print(unique_ids)
         n_clusters = len(unique_ids)
         # print("Number of clusters")
         # print(n_clusters)
