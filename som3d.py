@@ -90,13 +90,13 @@ if __name__ == "__main__":
                 feature_list = [n.decode('utf-8') for n in feature_list]
                 f5.close()
 
-        print(feature_list)
-        print("shape after x:", np.shape(x))
+        # print(feature_list)
+        # print("shape after x:", np.shape(x))
 
         #--------------------------------------------------
         # analyze
         #1. standardize:
-        scaler = StandardScaler()
+        # scaler = StandardScaler()
         scaler = MinMaxScaler()
 
         scaler.fit(x)
@@ -109,9 +109,9 @@ if __name__ == "__main__":
         attr=pd.DataFrame(x)
         attr.columns=feature_list
         #parser.parse_args
-        print("setting dimensions", parser.parse_args())
+        # print("setting dimensions", parser.parse_args())
 
-        print('constructing SOM...')
+        print(f'constructing SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...')
         m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
         labels = [str(xxx) for xxx in range(len(x))]
@@ -120,19 +120,19 @@ if __name__ == "__main__":
 
         # m.significance()
 
-        print(m.convergence())
+        print(f"convergence at {args.train} steps = {m.convergence()}")
 
         #Data matrix with neuron positions:
         data_matrix=m.projection()
         data_Xneuron=data_matrix['x']
         data_Yneuron=data_matrix['y']
 
-        print("Printing Xneuron info")
-        print(data_Xneuron)
-        print("Printing Xneuron info position 5")
-        print(data_Xneuron[4])
-        print("Printing Yneuron info")
-        print(data_Yneuron)
+        # print("Printing Xneuron info")
+        # print(data_Xneuron)
+        # print("Printing Xneuron info position 5")
+        # print(data_Xneuron[4])
+        # print("Printing Yneuron info")
+        # print(data_Yneuron)
 
         #Neuron matrix with centroids:
         umat = m.compute_umat(smoothing=2)
@@ -154,8 +154,8 @@ if __name__ == "__main__":
         unique_ids = list(set(centr_locs))
         print(unique_ids)
         n_clusters = len(unique_ids)
-        print("Number of clusters")
-        print(n_clusters)
+        # print("Number of clusters")
+        # print(n_clusters)
 
         mapping = {}
         for I, key in enumerate(unique_ids):
@@ -170,12 +170,12 @@ if __name__ == "__main__":
 
                         clusters[i,j] = I
 
-        print(centr_x)
-        print(centr_y)
+        # print(centr_x)
+        # print(centr_y)
 
-        print("clusters")
-        print(clusters)
-        print(np.shape(clusters))
+        # print("clusters")
+        # print(clusters)
+        # print(np.shape(clusters))
 
         def get_N_HexCol(N=n_clusters):
             HSV_tuples = [(x * 1.0 / N, 0.5, 0.5) for x in range(N)]
@@ -190,7 +190,7 @@ if __name__ == "__main__":
                 cluster_id = np.zeros((nx,ny,nz))
 
                 xinds = np.zeros(len(data_Xneuron))
-                print("shape of xinds:", np.shape(xinds))
+                # print("shape of xinds:", np.shape(xinds))
                 j = 0
                 for ix in range(nx):
                     for iy in range(ny):
@@ -202,7 +202,7 @@ if __name__ == "__main__":
                 f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
                 dsetx = f5.create_dataset("cluster_id",  data=cluster_id)
                 f5.close()
-                print("Done writing the cluster ID file")
+                # print("Done writing the cluster ID file")
 
         # #PLOTTING:
         #visualize clusters
