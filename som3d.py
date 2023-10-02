@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
         mapping = {}
         for I, key in enumerate(unique_ids):
-                print(key, I)
+                # print(key, I)
                 mapping[key] = I
 
         clusters = np.zeros((neuron_x,neuron_y))
