@@ -84,7 +84,8 @@ if __name__ == "__main__":
         if True:
                 # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
                 f5 = h5.File('/mnt/home/tha10/SOM-tests/features_4j1b1e_{}.h5'.format(lap), 'r')
-                x = f5['features'][()]
+                x = f5['features'][()]pwd
+
                 y = f5['target'][()]
                 feature_list = f5['names'][()]
 
@@ -97,8 +98,8 @@ if __name__ == "__main__":
         #--------------------------------------------------
         # analyze
         #1. standardize:
-        scaler = StandardScaler()
-        # scaler = MinMaxScaler()
+        # scaler = StandardScaler()
+        scaler = MinMaxScaler()
 
         scaler.fit(x)
         x = scaler.transform(x)
@@ -127,7 +128,6 @@ if __name__ == "__main__":
         data_matrix=m.projection()
         data_Xneuron=data_matrix['x']
         data_Yneuron=data_matrix['y']
-
         # print("Printing Xneuron info")
         # print(data_Xneuron)
         # print("Printing Xneuron info position 5")
