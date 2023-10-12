@@ -76,14 +76,14 @@ if __name__ == "__main__":
         xmax = 1.0
         ymax = 1.0
 
-        laps = [5000] # all the data laps to process
+        laps = [2800] # all the data laps to process
         lap = laps[0] # data file number
 
-        nx,ny,nz = 128,128,128
+        nx,ny,nz = 256,256,256
 
         if True:
                 # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
-                f5 = h5.File('/mnt/home/tha10/SOM-tests/features_4j1b1e_{}.h5'.format(lap), 'r')
+                f5 = h5.File('/mnt/home/tha10/SOM-tests/features_4j4b4e1r_256domain_{}.h5'.format(lap), 'r')
                 x = f5['features'][()]
 
                 y = f5['target'][()]
@@ -98,8 +98,8 @@ if __name__ == "__main__":
         #--------------------------------------------------
         # analyze
         #1. standardize:
-        # scaler = StandardScaler()
-        scaler = MinMaxScaler()
+        scaler = StandardScaler()
+        # scaler = MinMaxScaler()
 
         scaler.fit(x)
         x = scaler.transform(x)
