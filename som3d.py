@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
         if True:
                 # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
-                f5 = h5.File('/mnt/home/tha10/SOM-tests/features_4j4b4e1r_256domain_{}.h5'.format(lap), 'r')
+                f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_256domain_{}.h5'.format(lap), 'r')
                 x = f5['features'][()]
 
                 y = f5['target'][()]
@@ -91,6 +91,7 @@ if __name__ == "__main__":
 
                 feature_list = [n.decode('utf-8') for n in feature_list]
                 f5.close()
+                print(f"File loaded, parameters: {lap}-{args.xdim}-{args.ydim}-{args.alpha}-{args.train}")
 
         # print(feature_list)
         # print("shape after x:", np.shape(x))
