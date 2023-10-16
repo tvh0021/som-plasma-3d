@@ -122,8 +122,11 @@ if __name__ == "__main__":
         # m.starburst()
 
         # m.significance()
+        neurons = m.all_neurons()
+        print("neurons: ", neurons)
+        np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
 
-        print(f"convergence at {args.train} steps = {m.convergence()}")
+        # print(f"convergence at {args.train} steps = {m.convergence()}")
 
         #Data matrix with neuron positions:
         data_matrix=m.projection()
