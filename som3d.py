@@ -38,12 +38,12 @@ def get_smaller_domain(data_array, new_width, start_index_x, start_index_y, star
     """Get a smaller domain from a full box simulation to save computational time
 
     Args:
-        data_array (numpy 3d array): cubic box of some data
+        data_array (numpy 3d array): cubic box of some data [4d array should also work, provided that the first 3 dimensions are spatial]
         fraction (float): fraction of the original domain to keep, between 0 and 1
         start_index (int): starting index of the bigger domain
 
     Returns:
-        numpy 3d array: cropped cubic box
+        numpy 3d(4d) array: cropped cubic box
     """
     if (start_index_z + new_width > data_array.shape[0]) | (start_index_y + new_width > data_array.shape[1]) | (start_index_x + new_width > data_array.shape[2]):
         print("Cannot crop, smaller domain is outside of current domain")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
                                         start_index_crop_x = split_index1 * width_of_new_window
                                         start_index_crop_y = split_index2 * width_of_new_window
                                         start_index_crop_z = split_index3 * width_of_new_window
-                                        x_split = get_smaller_domain(x_4d, width_of_new_window, start_index_crop_x, start_index_crop_y, start_index_crop_z)
+                                        x_split_4d = get_smaller_domain(x_4d, width_of_new_window, start_index_crop_x, start_index_crop_y, start_index_crop_z)
 
                 # for split_index1 in range(nx // args.batch):
                 #         for split_index2 in range(ny // args.batch):
@@ -170,7 +170,7 @@ if __name__ == "__main__":
                 #                                                 matrix_indices = np.append(matrix_indices, np.array([x1,x2,x3]), axis=1)
 
                 #                         x_split = np.ravel_multi_index(matrix_indices, (nx,ny,nz))
-
+                                        x_split = flatten_to_2d(x_split_4d)
                                         attr=pd.DataFrame(x_split)
                                         attr.columns=feature_list
 
