@@ -30,16 +30,60 @@ parser.add_argument('--xdim', type=int, dest='xdim', default=10, help='Map x siz
 parser.add_argument('--ydim', type=int, dest='ydim', default=10, help='Map y size')
 parser.add_argument('--alpha', type=float, dest='alpha', default=0.5, help='Learning parameter')
 parser.add_argument('--train', type=int, dest='train', default=10000, help='Number of training steps')
+parser.add_argument('--batch', type=int, dest='batch', default=None, help='width of domain in a batch', required=False)
 
 args = parser.parse_args()
 
+def get_smaller_domain(data_array, new_width, start_index_x, start_index_y, start_index_z):
+    """Get a smaller domain from a full box simulation to save computational time
 
+    Args:
+        data_array (numpy 3d array): cubic box of some data
+        fraction (float): fraction of the original domain to keep, between 0 and 1
+        start_index (int): starting index of the bigger domain
 
+    Returns:
+        numpy 3d array: cropped cubic box
+    """
+    if (start_index_z + new_width > data_array.shape[0]) | (start_index_y + new_width > data_array.shape[1]) | (start_index_x + new_width > data_array.shape[2]):
+        print("Cannot crop, smaller domain is outside of current domain")
+        return 
+    else:
+        print(f"Cropped domain starts at: [{start_index_z},{start_index_y},{start_index_x}], width = {new_width}")
+        return data_array[start_index_z:start_index_z+new_width, start_index_y:start_index_y+new_width, start_index_x:start_index_x+new_width]
+    
+def convert_to_4d(data_array_2d):
+        """Convert a n x f array to a a x b x c x f array, where f is values of certain features and a, b, c are grid points
 
-def neighbors(arr,x,y,n=3):
-        ''' Given a 2D-array, returns an nxn array whose "center" element is arr[x,y]'''
-        arr=np.roll(np.roll(arr,shift=-x+1,axis=0),shift=-y+1,axis=1)
-        return arr[:n,:n]
+        Args:
+            data_array_2d (numpy 2d array)
+
+        Returns:
+            numpy 4d array
+        """
+        nd = np.cbrt(data_array_2d.shape[0])
+        data_array_4d = np.zeros((nd,nd,nd,data_array_2d.shape[-1]))
+
+        for f in range(data_array_2d.shape[-1]):
+                feature_3d = np.reshape(data_array_2d[:,f], newshape=[nd,nd,nd])
+                data_array_4d[:,:,:,f] = feature_3d[:,:,:]
+        return data_array_4d
+
+def flatten_to_2d(data_array_4d):
+        """Convert a a x b x c x f array to a n x f, where f is values of certain features and a, b, c are grid points
+
+        Args:
+            data_array_4d (numpy 4d array)
+
+        Returns:
+            numpy 2d array
+        """
+        nd = data_array_4d.shape[0]
+        data_array_2d = np.zeros((nd**3, data_array_4d.shape[-1]))
+        for f in range(data_array_4d.shape[-1]):
+                data_array_2d[:,f] = data_array_4d[:,:,:,f].flatten()
+        return data_array_2d
+
 
 if __name__ == "__main__":
 
@@ -53,22 +97,7 @@ if __name__ == "__main__":
         plt.rc('ytick', labelsize=5)
         plt.rc('axes',  labelsize=5)
 
-        scaler = StandardScaler()
         conf = Conf()
-
-        #build feature matrix
-        # feature_list = [
-        #                 'rho',
-        #                 'bx',
-        #                 'by',
-        #                 'bz',
-        #                 'ex',
-        #                 'ey',
-        #                 'ez',
-        #                 'jx',
-        #                 'jy',
-        #                 'jz',
-        #                 ]
 
         #--------------------------------------------------
         xmin = 0.0
@@ -79,19 +108,18 @@ if __name__ == "__main__":
         laps = [2800] # all the data laps to process
         lap = laps[0] # data file number
 
-        nx,ny,nz = 256,256,256
+        nx,ny,nz = 640, 640, 640
 
-        if True:
-                # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
-                f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_256domain_{}.h5'.format(lap), 'r')
-                x = f5['features'][()]
+        # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
+        f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
+        x = f5['features'][()]
 
-                y = f5['target'][()]
-                feature_list = f5['names'][()]
+        y = f5['target'][()]
+        feature_list = f5['names'][()]
 
-                feature_list = [n.decode('utf-8') for n in feature_list]
-                f5.close()
-                print(f"File loaded, parameters: {lap}-{args.xdim}-{args.ydim}-{args.alpha}-{args.train}")
+        feature_list = [n.decode('utf-8') for n in feature_list]
+        f5.close()
+        print(f"File loaded, parameters: {lap}-{args.xdim}-{args.ydim}-{args.alpha}-{args.train}-{args.batch}")
 
         # print(feature_list)
         # print("shape after x:", np.shape(x))
@@ -105,26 +133,63 @@ if __name__ == "__main__":
         scaler.fit(x)
         x = scaler.transform(x)
 
+        # if the SOM is to be divided into smaller batches, separate those batches window by window
+        if args.batch == None:
+                # POPSOM SOM:
+                attr=pd.DataFrame(x)
+                attr.columns=feature_list
 
-        ##### Using the SOM:
+                print(f'constructing full SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...')
+                m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
-        #       POPSOM SOM:
-        attr=pd.DataFrame(x)
-        attr.columns=feature_list
-        #parser.parse_args
-        # print("setting dimensions", parser.parse_args())
+                labels = [str(xxx) for xxx in range(len(x))]
+                m.fit(attr,labels)
+                neurons = m.all_neurons()
+                # print("neurons: ", neurons)
+                np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
+        else:
+                width_of_new_window = args.batch
+                x_4d = convert_to_4d(x)
 
-        print(f'constructing SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...')
-        m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
+                for split_index1 in range(nz // width_of_new_window):
+                        for split_index2 in range(ny // width_of_new_window):
+                               for split_index3 in range(nx // width_of_new_window):
+                                        start_index_crop_x = split_index1 * width_of_new_window
+                                        start_index_crop_y = split_index2 * width_of_new_window
+                                        start_index_crop_z = split_index3 * width_of_new_window
+                                        x_split = get_smaller_domain(x_4d, width_of_new_window, start_index_crop_x, start_index_crop_y, start_index_crop_z)
 
-        labels = [str(xxx) for xxx in range(len(x))]
-        m.fit(attr,labels)
-        # m.starburst()
+                # for split_index1 in range(nx // args.batch):
+                #         for split_index2 in range(ny // args.batch):
+                #                for split_index3 in range(nz // args.batch):
+                #                         matrix_indices = np.array([]) # list of indices that are inside the 3d domain
 
-        # m.significance()
-        neurons = m.all_neurons()
-        print("neurons: ", neurons)
-        np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
+                #                         for x1 in range(split_index1*args.batch, (split_index1+1)*args.batch):
+                #                                 for x2 in range(split_index2*args.batch, (split_index2+1)*args.batch):
+                #                                         for x3 in range(split_index3*args.batch, (split_index3+1)*args.batch):
+                #                                                 matrix_indices = np.append(matrix_indices, np.array([x1,x2,x3]), axis=1)
+
+                #                         x_split = np.ravel_multi_index(matrix_indices, (nx,ny,nz))
+
+                                        attr=pd.DataFrame(x_split)
+                                        attr.columns=feature_list
+
+                                        print(f'constructing batch SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...')
+                                        m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
+
+                                        labels = [str(xxx) for xxx in range(len(x_split))]
+                                        if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
+                                                m.fit(attr,labels,restart=False)
+                                        else:
+                                                m.fit(attr,labels,restart=True, neurons=neurons)
+
+                                        neurons = m.all_neurons()
+                                        # print("neurons: ", neurons)
+                                        np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+
+
+
+        
 
         # print(f"convergence at {args.train} steps = {m.convergence()}")
 
