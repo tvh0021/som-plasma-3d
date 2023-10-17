@@ -61,7 +61,7 @@ def convert_to_4d(data_array_2d):
         Returns:
             numpy 4d array
         """
-        nd = np.cbrt(data_array_2d.shape[0])
+        nd = int(np.cbrt(data_array_2d.shape[0]))
         data_array_4d = np.zeros((nd,nd,nd,data_array_2d.shape[-1]))
 
         for f in range(data_array_2d.shape[-1]):
@@ -79,7 +79,7 @@ def flatten_to_2d(data_array_4d):
             numpy 2d array
         """
         nd = data_array_4d.shape[0]
-        data_array_2d = np.zeros((nd**3, data_array_4d.shape[-1]))
+        data_array_2d = np.zeros((int(nd**3), data_array_4d.shape[-1]))
         for f in range(data_array_4d.shape[-1]):
                 data_array_2d[:,f] = data_array_4d[:,:,:,f].flatten()
         return data_array_2d
