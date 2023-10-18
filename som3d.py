@@ -140,7 +140,7 @@ if __name__ == "__main__":
         x = scaler.transform(x)
 
         # if the SOM is to be divided into smaller batches, separate those batches window by window
-        if args.batch == None & args.pretrained == False:
+        if (args.batch is None) & (args.pretrained == False):
                 # POPSOM SOM:
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
@@ -153,7 +153,7 @@ if __name__ == "__main__":
                 neurons = m.all_neurons()
                 # print("neurons: ", neurons)
                 np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
-        elif args.pretrained == False:
+        elif (args.batch is not None) & (args.pretrained == False):
                 width_of_new_window = args.batch
                 x_4d = convert_to_4d(x)
 
