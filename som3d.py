@@ -46,10 +46,10 @@ def get_smaller_domain(data_array, new_width, start_index_x, start_index_y, star
         numpy 3d(4d) array: cropped cubic box
     """
     if (start_index_z + new_width > data_array.shape[0]) | (start_index_y + new_width > data_array.shape[1]) | (start_index_x + new_width > data_array.shape[2]):
-        print("Cannot crop, smaller domain is outside of current domain")
+        print("Cannot crop, smaller domain is outside of current domain", flush=True)
         return 
     else:
-        print(f"Cropped domain starts at: [{start_index_z},{start_index_y},{start_index_x}], width = {new_width}")
+        print(f"Cropped domain starts at: [{start_index_z},{start_index_y},{start_index_x}], width = {new_width}", flush=True)
         return data_array[start_index_z:start_index_z+new_width, start_index_y:start_index_y+new_width, start_index_x:start_index_x+new_width]
     
 def convert_to_4d(data_array_2d):
@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
         feature_list = [n.decode('utf-8') for n in feature_list]
         f5.close()
-        print(f"File loaded, parameters: {lap}-{args.xdim}-{args.ydim}-{args.alpha}-{args.train}-{args.batch}")
+        print(f"File loaded, parameters: {lap}-{args.xdim}-{args.ydim}-{args.alpha}-{args.train}-{args.batch}", flush=True)
 
         # print(feature_list)
         # print("shape after x:", np.shape(x))
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
 
-                print(f'constructing full SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...')
+                print(f'constructing full SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
                 m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
                 labels = [str(xxx) for xxx in range(len(x))]
@@ -174,7 +174,7 @@ if __name__ == "__main__":
                                         attr=pd.DataFrame(x_split)
                                         attr.columns=feature_list
 
-                                        print(f'constructing batch SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...')
+                                        print(f'constructing batch SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
                                         m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
                                         labels = [str(xxx) for xxx in range(len(x_split))]
