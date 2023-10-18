@@ -30,7 +30,9 @@ parser.add_argument('--xdim', type=int, dest='xdim', default=10, help='Map x siz
 parser.add_argument('--ydim', type=int, dest='ydim', default=10, help='Map y size')
 parser.add_argument('--alpha', type=float, dest='alpha', default=0.5, help='Learning parameter')
 parser.add_argument('--train', type=int, dest='train', default=10000, help='Number of training steps')
-parser.add_argument('--batch', type=int, dest='batch', default=None, help='width of domain in a batch', required=False)
+parser.add_argument('--batch', type=int, dest='batch', default=None, help='Width of domain in a batch', required=False)
+parser.add_argument('--pretrained', type=bool, dest='pretrained', default=False, help='Is the model is pretrained?', required=False)
+parser.add_argument('--neurons_path', type=str, dest='neurons_path', default=None, help='Path to file containing neuron values', required=False)
 
 args = parser.parse_args()
 
@@ -91,6 +93,10 @@ if __name__ == "__main__":
         #plt.fig = plt.figure(1, figsize=(4,3.5), dpi=200)
         #fig = plt.figure(1, figsize=(6,6), dpi=300)
 
+        if args.pretrained == True & args.neurons_path is None:
+               print("Cannot run, no neuron values provided.", flush=True)
+               exit()
+
         plt.rc('font',  family='sans-serif')
         #plt.rc('text',  usetex=True)
         plt.rc('xtick', labelsize=5)
@@ -134,7 +140,7 @@ if __name__ == "__main__":
         x = scaler.transform(x)
 
         # if the SOM is to be divided into smaller batches, separate those batches window by window
-        if args.batch == None:
+        if args.batch == None & args.pretrained == False:
                 # POPSOM SOM:
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
@@ -142,12 +148,12 @@ if __name__ == "__main__":
                 print(f'constructing full SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
                 m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
-                labels = [str(xxx) for xxx in range(len(x))]
+                labels = [str(index) for index in range(len(x))]
                 m.fit(attr,labels)
                 neurons = m.all_neurons()
                 # print("neurons: ", neurons)
                 np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
-        else:
+        elif args.pretrained == False:
                 width_of_new_window = args.batch
                 x_4d = convert_to_4d(x)
 
@@ -177,17 +183,28 @@ if __name__ == "__main__":
                                         print(f'constructing batch SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
                                         m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
-                                        labels = [str(xxx) for xxx in range(len(x_split))]
+                                        labels = [str(index) for index in range(len(x_split))]
                                         if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
                                                 m.fit(attr,labels,restart=False)
-                                        else:
+                                        else: # if first window, then initiate random neuron values, else use neurons from last batch
                                                 m.fit(attr,labels,restart=True, neurons=neurons)
 
                                         neurons = m.all_neurons()
                                         # print("neurons: ", neurons)
                                         np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
 
-
+                # at the end, load the entire domain back to m to assign cluster id
+                attr=pd.DataFrame(x)
+                attr.columns=feature_list
+                labels = [str(index) for index in range(len(x))]
+                m.fit_notraining(attr, labels, neurons)
+        else: # if the run is initialized as a no training run, load these values
+                m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
+                attr=pd.DataFrame(x)
+                attr.columns=feature_list
+                labels = [str(index) for index in range(len(x))]
+                neurons = np.load(args.neurons_path)
+                m.fit_notraining(attr,labels,neurons)
 
         
 
