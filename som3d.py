@@ -93,7 +93,7 @@ if __name__ == "__main__":
         #plt.fig = plt.figure(1, figsize=(4,3.5), dpi=200)
         #fig = plt.figure(1, figsize=(6,6), dpi=300)
 
-        if args.pretrained == True & args.neurons_path is None:
+        if (args.pretrained == True) & (args.neurons_path is None):
                print("Cannot run, no neuron values provided.", flush=True)
                exit()
 
