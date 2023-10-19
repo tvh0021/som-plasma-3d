@@ -199,6 +199,7 @@ if __name__ == "__main__":
                 labels = [str(index) for index in range(len(x))]
                 m.fit_notraining(attr, labels, neurons)
         else: # if the run is initialized as a no training run, load these values
+                print(f'constructing pre-trained SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
                 m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
@@ -214,11 +215,11 @@ if __name__ == "__main__":
         data_matrix=m.projection()
         data_Xneuron=data_matrix['x']
         data_Yneuron=data_matrix['y']
-        # print("Printing Xneuron info")
+        print("Printing Xneuron info", flush=True)
         # print(data_Xneuron)
         # print("Printing Xneuron info position 5")
         # print(data_Xneuron[4])
-        # print("Printing Yneuron info")
+        print("Printing Yneuron info", flush=True)
         # print(data_Yneuron)
 
         #Neuron matrix with centroids:
@@ -241,8 +242,8 @@ if __name__ == "__main__":
         unique_ids = list(set(centr_locs))
         # print(unique_ids)
         n_clusters = len(unique_ids)
-        # print("Number of clusters")
-        # print(n_clusters)
+        print("Number of clusters", flush=True)
+        print(n_clusters)
 
         mapping = {}
         for I, key in enumerate(unique_ids):
@@ -260,8 +261,8 @@ if __name__ == "__main__":
         # print(centr_x)
         # print(centr_y)
 
-        # print("clusters")
-        # print(clusters)
+        print("clusters", flush=True)
+        print(clusters)
         # print(np.shape(clusters))
 
         def get_N_HexCol(N=n_clusters):
