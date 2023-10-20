@@ -94,8 +94,7 @@ if __name__ == "__main__":
         #fig = plt.figure(1, figsize=(6,6), dpi=300)
 
         if (args.pretrained == True) & (args.neurons_path is None):
-               print("Cannot run, no neuron values provided.", flush=True)
-               exit()
+               sys.exit("Cannot run, no neuron values provided.")
 
         plt.rc('font',  family='sans-serif')
         #plt.rc('text',  usetex=True)
@@ -265,14 +264,6 @@ if __name__ == "__main__":
         print(clusters)
         # print(np.shape(clusters))
 
-        def get_N_HexCol(N=n_clusters):
-            HSV_tuples = [(x * 1.0 / N, 0.5, 0.5) for x in range(N)]
-            hex_out = []
-            for rgb in HSV_tuples:
-                    rgb = map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*rgb))
-                    hex_out.append('#%02x%02x%02x' % tuple(rgb))
-            return hex_out
-
         #TRANSFER RESULT BACK INTO ORIGINAL DATA PLOT
         if True:
                 cluster_id = np.zeros((nx,ny,nz))
@@ -280,11 +271,11 @@ if __name__ == "__main__":
                 xinds = np.zeros(len(data_Xneuron))
                 # print("shape of xinds:", np.shape(xinds))
                 j = 0
-                for ix in range(nx):
+                for iz in range(nz):
                     for iy in range(ny):
-                        for iz in range(nz):
-                            cluster_id[ix,iy,iz] = clusters[data_Xneuron[j], data_Yneuron[j]]
-                            xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]]
+                        for ix in range(nx):
+                            cluster_id[iz,iy,ix] = clusters[data_Xneuron[j], data_Yneuron[j]]
+                        #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
                             j += 1
 
                 f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
@@ -292,8 +283,18 @@ if __name__ == "__main__":
                 f5.close()
                 # print("Done writing the cluster ID file")
 
+        
+        
         # #PLOTTING:
         #visualize clusters
+
+        def get_N_HexCol(N=n_clusters):
+            HSV_tuples = [(x * 1.0 / N, 0.5, 0.5) for x in range(N)]
+            hex_out = []
+            for rgb in HSV_tuples:
+                    rgb = map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*rgb))
+                    hex_out.append('#%02x%02x%02x' % tuple(rgb))
+            return hex_out        
 
         x = np.array(x)
         cluster_id = np.array(cluster_id)
