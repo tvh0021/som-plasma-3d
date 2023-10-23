@@ -116,8 +116,8 @@ if __name__ == "__main__":
         nx,ny,nz = 640, 640, 640
 
         # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
-        f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
-        # f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
+        # f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
+        f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
         x = f5['features'][()]
 
         y = f5['target'][()]
