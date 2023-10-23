@@ -165,17 +165,6 @@ if __name__ == "__main__":
                                         start_index_crop_z = split_index3 * width_of_new_window
                                         x_split_4d = get_smaller_domain(x_4d, width_of_new_window, start_index_crop_x, start_index_crop_y, start_index_crop_z)
 
-                # for split_index1 in range(nx // args.batch):
-                #         for split_index2 in range(ny // args.batch):
-                #                for split_index3 in range(nz // args.batch):
-                #                         matrix_indices = np.array([]) # list of indices that are inside the 3d domain
-
-                #                         for x1 in range(split_index1*args.batch, (split_index1+1)*args.batch):
-                #                                 for x2 in range(split_index2*args.batch, (split_index2+1)*args.batch):
-                #                                         for x3 in range(split_index3*args.batch, (split_index3+1)*args.batch):
-                #                                                 matrix_indices = np.append(matrix_indices, np.array([x1,x2,x3]), axis=1)
-
-                #                         x_split = np.ravel_multi_index(matrix_indices, (nx,ny,nz))
                                         x_split = flatten_to_2d(x_split_4d)
                                         attr=pd.DataFrame(x_split)
                                         attr.columns=feature_list

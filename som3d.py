@@ -116,7 +116,8 @@ if __name__ == "__main__":
         nx,ny,nz = 640, 640, 640
 
         # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
-        f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
+        # f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
+        f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
         x = f5['features'][()]
 
         y = f5['target'][()]
@@ -164,17 +165,6 @@ if __name__ == "__main__":
                                         start_index_crop_z = split_index3 * width_of_new_window
                                         x_split_4d = get_smaller_domain(x_4d, width_of_new_window, start_index_crop_x, start_index_crop_y, start_index_crop_z)
 
-                # for split_index1 in range(nx // args.batch):
-                #         for split_index2 in range(ny // args.batch):
-                #                for split_index3 in range(nz // args.batch):
-                #                         matrix_indices = np.array([]) # list of indices that are inside the 3d domain
-
-                #                         for x1 in range(split_index1*args.batch, (split_index1+1)*args.batch):
-                #                                 for x2 in range(split_index2*args.batch, (split_index2+1)*args.batch):
-                #                                         for x3 in range(split_index3*args.batch, (split_index3+1)*args.batch):
-                #                                                 matrix_indices = np.append(matrix_indices, np.array([x1,x2,x3]), axis=1)
-
-                #                         x_split = np.ravel_multi_index(matrix_indices, (nx,ny,nz))
                                         x_split = flatten_to_2d(x_split_4d)
                                         attr=pd.DataFrame(x_split)
                                         attr.columns=feature_list
@@ -214,11 +204,15 @@ if __name__ == "__main__":
         data_matrix=m.projection()
         data_Xneuron=data_matrix['x']
         data_Yneuron=data_matrix['y']
+        print("data matrix", flush=True)
+        print(data_matrix.head(), flush=True)
         print("Printing Xneuron info", flush=True)
+        print("Shape of Xneuron: ", data_Xneuron.shape, flush=True)
         # print(data_Xneuron)
         # print("Printing Xneuron info position 5")
         # print(data_Xneuron[4])
         print("Printing Yneuron info", flush=True)
+        print("Shape of Yneuron: ", data_Yneuron.shape, flush=True)
         # print(data_Yneuron)
 
         #Neuron matrix with centroids:
@@ -261,20 +255,20 @@ if __name__ == "__main__":
         # print(centr_y)
 
         print("clusters", flush=True)
-        print(clusters)
+        print(clusters, flush=True)
         # print(np.shape(clusters))
 
         #TRANSFER RESULT BACK INTO ORIGINAL DATA PLOT
         if True:
-                cluster_id = np.zeros((nx,ny,nz))
+                cluster_id = np.zeros((nz,ny,nx))
 
-                xinds = np.zeros(len(data_Xneuron))
+                # xinds = np.zeros(len(data_Xneuron))
                 # print("shape of xinds:", np.shape(xinds))
                 j = 0
                 for iz in range(nz):
                     for iy in range(ny):
                         for ix in range(nx):
-                            cluster_id[iz,iy,ix] = clusters[data_Xneuron[j], data_Yneuron[j]]
+                            cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
                         #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
                             j += 1
 
