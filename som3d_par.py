@@ -215,11 +215,15 @@ if __name__ == "__main__":
         data_matrix=m.projection()
         data_Xneuron=data_matrix['x']
         data_Yneuron=data_matrix['y']
+        print("data matrix")
+        print(data_matrix.head())
         print("Printing Xneuron info", flush=True)
+        print("Shape of Xneuron: ", data_Xneuron.shape)
         # print(data_Xneuron)
         # print("Printing Xneuron info position 5")
         # print(data_Xneuron[4])
         print("Printing Yneuron info", flush=True)
+        print("Shape of Yneuron: ", data_Yneuron.shape)
         # print(data_Yneuron)
 
         #Neuron matrix with centroids:
@@ -267,15 +271,15 @@ if __name__ == "__main__":
 
         #TRANSFER RESULT BACK INTO ORIGINAL DATA PLOT
         if True:
-                cluster_id = np.zeros((nx,ny,nz))
+                cluster_id = np.zeros((nz,ny,nx))
 
-                xinds = np.zeros(len(data_Xneuron))
+                # xinds = np.zeros(len(data_Xneuron))
                 # print("shape of xinds:", np.shape(xinds))
                 j = 0
                 for iz in range(nz):
                     for iy in range(ny):
                         for ix in range(nx):
-                            cluster_id[iz,iy,ix] = clusters[data_Xneuron[j], data_Yneuron[j]]
+                            cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
                         #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
                             j += 1
 
