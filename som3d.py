@@ -27,6 +27,7 @@ from sklearn import metrics
 import argparse
 
 parser = argparse.ArgumentParser(description='popsom code')
+parser.add_argument("--features_path", type=str, dest='features_path', default='/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_2800.h5')
 parser.add_argument('--xdim', type=int, dest='xdim', default=10, help='Map x size')
 parser.add_argument('--ydim', type=int, dest='ydim', default=10, help='Map y size')
 parser.add_argument('--alpha', type=float, dest='alpha', default=0.5, help='Learning parameter')
@@ -142,9 +143,10 @@ if __name__ == "__main__":
 
         nx,ny,nz = 640, 640, 640
 
-        # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
         # f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
-        f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
+        # f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
+        f5 = h5.File(args.features_path, 'r')
+
         x = f5['features'][()]
 
         y = f5['target'][()]
