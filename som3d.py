@@ -10,6 +10,7 @@ from matplotlib import colors
 import popsom.popsom as popsom
 import pandas as pd
 import colorsys
+from numba import njit, prange
 
 import h5py as h5
 import sys, os
@@ -54,6 +55,7 @@ def get_smaller_domain(data_array, new_width, start_index_x, start_index_y, star
         print(f"Cropped domain starts at: [{start_index_z},{start_index_y},{start_index_x}], width = {new_width}", flush=True)
         return data_array[start_index_z:start_index_z+new_width, start_index_y:start_index_y+new_width, start_index_x:start_index_x+new_width]
     
+@njit(parallel=True)
 def convert_to_4d(data_array_2d):
         """Convert a n x f array to a a x b x c x f array, where f is values of certain features and a, b, c are grid points
 
@@ -66,12 +68,13 @@ def convert_to_4d(data_array_2d):
         nd = int(np.cbrt(data_array_2d.shape[0]))
         data_array_4d = np.zeros((nd,nd,nd,data_array_2d.shape[-1]))
 
-        for f in range(data_array_2d.shape[-1]):
+        for f in prange(data_array_2d.shape[-1]):
                 feature_3d = np.reshape(data_array_2d[:,f], newshape=[nd,nd,nd])
                 data_array_4d[:,:,:,f] = feature_3d[:,:,:]
         return data_array_4d
 
-def flatten_to_2d(data_array_4d):
+@njit(parallel=True)
+def flatten_to_2d(data_array_4d : np.ndarray):
         """Convert a a x b x c x f array to a n x f, where f is values of certain features and a, b, c are grid points
 
         Args:
@@ -82,9 +85,33 @@ def flatten_to_2d(data_array_4d):
         """
         nd = data_array_4d.shape[0]
         data_array_2d = np.zeros((int(nd**3), data_array_4d.shape[-1]))
-        for f in range(data_array_4d.shape[-1]):
+        for f in prange(data_array_4d.shape[-1]):
                 data_array_2d[:,f] = data_array_4d[:,:,:,f].flatten()
         return data_array_2d
+
+@njit(parallel=True)
+def assign_cluster_id(nx : int, ny : int, nz : int, data_Xneuron : np.ndarray, data_Yneuron : np.ndarray, clusters : np.ndarray) -> np.ndarray:
+        """From neuron data and cluster assignments, return the cluster id of the cell
+
+        Args:
+            nx (int): length of x-dimension
+            ny (int): length of y-dimension
+            nz (int): length of z-dimension
+            data_Xneuron (np.ndarray): 1d array with x coordinate of the neuron associated with a cell
+            data_Yneuron (np.ndarray): 1d array with y coordinate of the neuron associated with a cell
+            clusters (np.ndarray): n x n matrix of cluster on neuron map
+
+        Returns:
+            np.ndarray: cluster_id
+        """
+        cluster_id = np.zeros((nz,ny,nx))
+        j = 0
+        for iz in prange(nz):
+                for iy in prange(ny):
+                        for ix in prange(nx):
+                                cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
+                                j += 1
+        return cluster_id
 
 
 if __name__ == "__main__":
@@ -116,8 +143,8 @@ if __name__ == "__main__":
         nx,ny,nz = 640, 640, 640
 
         # f5 = h5.File('/mnt/home/tha10/SOM-tests/data_features_3dfull_{}.h5'.format(lap), 'r')
-        f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
-        # f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
+        # f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
+        f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
         x = f5['features'][()]
 
         y = f5['target'][()]
@@ -257,20 +284,22 @@ if __name__ == "__main__":
         print("clusters", flush=True)
         print(clusters, flush=True)
         # print(np.shape(clusters))
+        
 
         #TRANSFER RESULT BACK INTO ORIGINAL DATA PLOT
         if True:
-                cluster_id = np.zeros((nz,ny,nx))
-
+                # cluster_id = np.zeros((nz,ny,nx))
                 # xinds = np.zeros(len(data_Xneuron))
                 # print("shape of xinds:", np.shape(xinds))
-                j = 0
-                for iz in range(nz):
-                    for iy in range(ny):
-                        for ix in range(nx):
-                            cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
-                        #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
-                            j += 1
+                # j = 0
+                # for iz in range(nz):
+                #     for iy in range(ny):
+                #         for ix in range(nx):
+                #             cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
+                #         #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
+                #             j += 1
+
+                cluster_id = assign_cluster_id(nx, ny, nz, np.array(data_Xneuron), np.array(data_Yneuron), clusters)
 
                 f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
                 dsetx = f5.create_dataset("cluster_id",  data=cluster_id)
