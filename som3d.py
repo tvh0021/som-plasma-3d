@@ -177,7 +177,7 @@ if __name__ == "__main__":
                 print(f'constructing full SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
                 m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
-                labels = [str(index) for index in range(len(x))]
+                labels = np.array([str(index) for index in range(len(x))])
                 m.fit(attr,labels)
                 neurons = m.all_neurons()
                 # print("neurons: ", neurons)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
                                         print(f'constructing batch SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
                                         m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
-                                        labels = [str(index) for index in range(len(x_split))]
+                                        labels = np.arrya([str(index) for index in range(len(x_split))])
                                         if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
                                                 m.fit(attr,labels,restart=False)
                                         else: # if first window, then initiate random neuron values, else use neurons from last batch
@@ -214,14 +214,14 @@ if __name__ == "__main__":
                 # at the end, load the entire domain back to m to assign cluster id
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
-                labels = [str(index) for index in range(len(x))]
+                labels = np.array([str(index) for index in range(len(x))])
                 m.fit_notraining(attr, labels, neurons)
         else: # if the run is initialized as a no training run, load these values
                 print(f'constructing pre-trained SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
                 m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
-                labels = [str(index) for index in range(len(x))]
+                labels = np.array([str(index) for index in range(len(x))])
                 neurons = np.load(args.neurons_path)
                 m.fit_notraining(attr,labels,neurons)
 
@@ -230,11 +230,12 @@ if __name__ == "__main__":
         # print(f"convergence at {args.train} steps = {m.convergence()}")
 
         #Data matrix with neuron positions:
+        print("Calculating projection")
         data_matrix=m.projection()
-        data_Xneuron=data_matrix['x']
-        data_Yneuron=data_matrix['y']
-        print("data matrix", flush=True)
-        print(data_matrix.head(), flush=True)
+        data_Xneuron=data_matrix[:,0]
+        data_Yneuron=data_matrix[:,1]
+        print("data matrix: ", flush=True)
+        print(data_matrix[:10,:], flush=True)
         print("Printing Xneuron info", flush=True)
         print("Shape of Xneuron: ", data_Xneuron.shape, flush=True)
         # print(data_Xneuron)
@@ -289,24 +290,24 @@ if __name__ == "__main__":
         
 
         #TRANSFER RESULT BACK INTO ORIGINAL DATA PLOT
-        if True:
-                # cluster_id = np.zeros((nz,ny,nx))
-                # xinds = np.zeros(len(data_Xneuron))
-                # print("shape of xinds:", np.shape(xinds))
-                # j = 0
-                # for iz in range(nz):
-                #     for iy in range(ny):
-                #         for ix in range(nx):
-                #             cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
-                #         #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
-                #             j += 1
+        # cluster_id = np.zeros((nz,ny,nx))
+        # xinds = np.zeros(len(data_Xneuron))
+        # print("shape of xinds:", np.shape(xinds))
+        # j = 0
+        # for iz in range(nz):
+        #     for iy in range(ny):
+        #         for ix in range(nx):
+        #             cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
+        #         #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
+        #             j += 1
 
-                cluster_id = assign_cluster_id(nx, ny, nz, np.array(data_Xneuron), np.array(data_Yneuron), clusters)
+        print("Assigning clusters", flush=True)
+        cluster_id = assign_cluster_id(nx, ny, nz, data_Xneuron, data_Yneuron, clusters)
 
-                f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
-                dsetx = f5.create_dataset("cluster_id",  data=cluster_id)
-                f5.close()
-                # print("Done writing the cluster ID file")
+        f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
+        dsetx = f5.create_dataset("cluster_id",  data=cluster_id)
+        f5.close()
+        print("Done writing the cluster ID file")
 
         
         
