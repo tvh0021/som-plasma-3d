@@ -106,12 +106,13 @@ def assign_cluster_id(nx : int, ny : int, nz : int, data_Xneuron : np.ndarray, d
             np.ndarray: cluster_id
         """
         cluster_id = np.zeros((nz,ny,nx))
-        j = 0
         for iz in prange(nz):
                 for iy in prange(ny):
                         for ix in prange(nx):
+                                # coord = np.array([iz,iy,ix])
+                                # shape = np.array([nz,ny,nx])
+                                j = iz * ny * nx + iy * nx + ix
                                 cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
-                                j += 1
         return cluster_id
 
 
@@ -290,9 +291,10 @@ if __name__ == "__main__":
         
 
         #TRANSFER RESULT BACK INTO ORIGINAL DATA PLOT
-        # cluster_id = np.zeros((nz,ny,nx))
         # xinds = np.zeros(len(data_Xneuron))
         # print("shape of xinds:", np.shape(xinds))
+        print("Assigning clusters", flush=True)
+        # cluster_id = np.zeros((nz,ny,nx))
         # j = 0
         # for iz in range(nz):
         #     for iy in range(ny):
@@ -301,7 +303,7 @@ if __name__ == "__main__":
         #         #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
         #             j += 1
 
-        print("Assigning clusters", flush=True)
+        
         cluster_id = assign_cluster_id(nx, ny, nz, data_Xneuron, data_Yneuron, clusters)
 
         f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
@@ -322,8 +324,7 @@ if __name__ == "__main__":
                     hex_out.append('#%02x%02x%02x' % tuple(rgb))
             return hex_out        
 
-        x = np.array(x)
-        cluster_id = np.array(cluster_id)
+        # x = np.array(x)
         if False:
                 print("visualizing SOM data")
                 fig2 = plt.figure(2, figsize=(20,20), dpi=400)
