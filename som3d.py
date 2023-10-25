@@ -56,7 +56,6 @@ def get_smaller_domain(data_array, new_width, start_index_x, start_index_y, star
         print(f"Cropped domain starts at: [{start_index_z},{start_index_y},{start_index_x}], width = {new_width}", flush=True)
         return data_array[start_index_z:start_index_z+new_width, start_index_y:start_index_y+new_width, start_index_x:start_index_x+new_width]
     
-@njit(parallel=True)
 def convert_to_4d(data_array_2d):
         """Convert a n x f array to a a x b x c x f array, where f is values of certain features and a, b, c are grid points
 
@@ -69,12 +68,11 @@ def convert_to_4d(data_array_2d):
         nd = int(np.cbrt(data_array_2d.shape[0]))
         data_array_4d = np.zeros((nd,nd,nd,data_array_2d.shape[-1]))
 
-        for f in prange(data_array_2d.shape[-1]):
+        for f in range(data_array_2d.shape[-1]):
                 feature_3d = np.reshape(data_array_2d[:,f], newshape=[nd,nd,nd])
                 data_array_4d[:,:,:,f] = feature_3d[:,:,:]
         return data_array_4d
 
-@njit(parallel=True)
 def flatten_to_2d(data_array_4d : np.ndarray):
         """Convert a a x b x c x f array to a n x f, where f is values of certain features and a, b, c are grid points
 
@@ -86,7 +84,7 @@ def flatten_to_2d(data_array_4d : np.ndarray):
         """
         nd = data_array_4d.shape[0]
         data_array_2d = np.zeros((int(nd**3), data_array_4d.shape[-1]))
-        for f in prange(data_array_4d.shape[-1]):
+        for f in range(data_array_4d.shape[-1]):
                 data_array_2d[:,f] = data_array_4d[:,:,:,f].flatten()
         return data_array_2d
 
@@ -178,7 +176,7 @@ if __name__ == "__main__":
                 print(f'constructing full SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
                 m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
-                labels = np.array([str(index) for index in range(len(x))])
+                labels = np.array(list(range(len(x))))
                 m.fit(attr,labels)
                 neurons = m.all_neurons()
                 # print("neurons: ", neurons)
@@ -202,7 +200,7 @@ if __name__ == "__main__":
                                         print(f'constructing batch SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
                                         m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
 
-                                        labels = np.arrya([str(index) for index in range(len(x_split))])
+                                        labels = np.array(list(range(len(x_split))))
                                         if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
                                                 m.fit(attr,labels,restart=False)
                                         else: # if first window, then initiate random neuron values, else use neurons from last batch
@@ -215,14 +213,14 @@ if __name__ == "__main__":
                 # at the end, load the entire domain back to m to assign cluster id
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
-                labels = np.array([str(index) for index in range(len(x))])
+                labels = np.array(list(range(len(x))))
                 m.fit_notraining(attr, labels, neurons)
         else: # if the run is initialized as a no training run, load these values
                 print(f'constructing pre-trained SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
                 m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
-                labels = np.array([str(index) for index in range(len(x))])
+                labels = np.array(list(range(len(x))))
                 neurons = np.load(args.neurons_path)
                 m.fit_notraining(attr,labels,neurons)
 
