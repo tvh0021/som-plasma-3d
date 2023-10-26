@@ -27,7 +27,7 @@ from sklearn import metrics
 import argparse
 
 parser = argparse.ArgumentParser(description='popsom code')
-parser.add_argument("--features_path", type=str, dest='features_path', default='/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_2800.h5')
+parser.add_argument("--features_path", type=str, dest='features_path', default='/mnt/ceph/users/tha10/SOM-tests/hr-d3x640/features_4j1b1e_2800.h5')
 parser.add_argument('--xdim', type=int, dest='xdim', default=10, help='Map x size')
 parser.add_argument('--ydim', type=int, dest='ydim', default=10, help='Map y size')
 parser.add_argument('--alpha', type=float, dest='alpha', default=0.5, help='Learning parameter')
@@ -35,6 +35,7 @@ parser.add_argument('--train', type=int, dest='train', default=10000, help='Numb
 parser.add_argument('--batch', type=int, dest='batch', default=None, help='Width of domain in a batch', required=False)
 parser.add_argument('--pretrained', type=bool, dest='pretrained', default=False, help='Is the model is pretrained?', required=False)
 parser.add_argument('--neurons_path', type=str, dest='neurons_path', default=None, help='Path to file containing neuron values', required=False)
+parser.add_argument('--save_neuron_values', type=bool, dest='save_neuron_values', default=False, help='Save neuron values to file?', required=False)
 
 args = parser.parse_args()
 
@@ -107,9 +108,7 @@ def assign_cluster_id(nx : int, ny : int, nz : int, data_Xneuron : np.ndarray, d
         for iz in prange(nz):
                 for iy in prange(ny):
                         for ix in prange(nx):
-                                # coord = np.array([iz,iy,ix])
-                                # shape = np.array([nz,ny,nx])
-                                j = iz * ny * nx + iy * nx + ix
+                                j = iz * ny * nx + iy * nx + ix # convert from 3d coordinates to 1d row indices
                                 cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
         return cluster_id
 
@@ -180,7 +179,8 @@ if __name__ == "__main__":
                 m.fit(attr,labels)
                 neurons = m.all_neurons()
                 # print("neurons: ", neurons)
-                np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
+                if args.save_neuron_values == True:
+                        np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
         elif (args.batch is not None) & (args.pretrained == False):
                 width_of_new_window = args.batch
                 x_4d = convert_to_4d(x)
@@ -208,7 +208,8 @@ if __name__ == "__main__":
 
                                         neurons = m.all_neurons()
                                         # print("neurons: ", neurons)
-                                        np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+                                        if args.save_neuron_values == True:
+                                                np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
 
                 # at the end, load the entire domain back to m to assign cluster id
                 attr=pd.DataFrame(x)
@@ -237,12 +238,8 @@ if __name__ == "__main__":
         print(data_matrix[:10,:], flush=True)
         print("Printing Xneuron info", flush=True)
         print("Shape of Xneuron: ", data_Xneuron.shape, flush=True)
-        # print(data_Xneuron)
-        # print("Printing Xneuron info position 5")
-        # print(data_Xneuron[4])
         print("Printing Yneuron info", flush=True)
         print("Shape of Yneuron: ", data_Yneuron.shape, flush=True)
-        # print(data_Yneuron)
 
         #Neuron matrix with centroids:
         umat = m.compute_umat(smoothing=2)
@@ -292,15 +289,6 @@ if __name__ == "__main__":
         # xinds = np.zeros(len(data_Xneuron))
         # print("shape of xinds:", np.shape(xinds))
         print("Assigning clusters", flush=True)
-        # cluster_id = np.zeros((nz,ny,nx))
-        # j = 0
-        # for iz in range(nz):
-        #     for iy in range(ny):
-        #         for ix in range(nx):
-        #             cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
-        #         #     xinds[j] = clusters[data_Xneuron[j], data_Yneuron[j]] # uncomment if plotting is True
-        #             j += 1
-
         
         cluster_id = assign_cluster_id(nx, ny, nz, data_Xneuron, data_Yneuron, clusters)
 
