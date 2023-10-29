@@ -139,11 +139,22 @@ if __name__ == "__main__":
         laps = [2800] # all the data laps to process
         lap = laps[0] # data file number
 
+        # CLI arguments
+        features_path = args.features_path
+        xdim = args.xdim
+        ydim = args.ydim
+        alpha = args.alpha
+        train = args.train
+        batch = args.batch
+        pretrained = args.pretrained
+        neurons_path = args.neurons_path
+        save_neuron_values = args.save_neuron_values
+
         nx,ny,nz = 640, 640, 640
 
         # f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
         # f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
-        f5 = h5.File(args.features_path, 'r')
+        f5 = h5.File(features_path, 'r')
 
         x = f5['features'][()]
 
@@ -152,7 +163,7 @@ if __name__ == "__main__":
 
         feature_list = [n.decode('utf-8') for n in feature_list]
         f5.close()
-        print(f"File loaded, parameters: {lap}-{args.xdim}-{args.ydim}-{args.alpha}-{args.train}-{args.batch}", flush=True)
+        print(f"File loaded, parameters: {lap}-{xdim}-{ydim}-{alpha}-{train}-{batch}", flush=True)
 
         # print(feature_list)
         # print("shape after x:", np.shape(x))
@@ -167,22 +178,26 @@ if __name__ == "__main__":
         x = scaler.transform(x)
 
         # if the SOM is to be divided into smaller batches, separate those batches window by window
-        if (args.batch is None) & (args.pretrained == False):
+        if (batch is None) & (pretrained == False):
                 # POPSOM SOM:
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
 
-                print(f'constructing full SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
-                m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
+                print(f'constructing full SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}...', flush=True)
+                m=popsom.map(xdim, ydim, alpha, train)
 
                 labels = np.array(list(range(len(x))))
                 m.fit(attr,labels)
                 neurons = m.all_neurons()
                 # print("neurons: ", neurons)
-                if args.save_neuron_values == True:
-                        np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.npy', neurons, allow_pickle=True)
-        elif (args.batch is not None) & (args.pretrained == False):
-                width_of_new_window = args.batch
+                if save_neuron_values == True:
+                        np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}.npy', neurons, allow_pickle=True)
+                # print changes in neuron weights
+                neuron_weights = m.weight_history
+                term = m.final_epoch
+                np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}.npy', neuron_weights, allow_pickle=True)
+        elif (batch is not None) & (pretrained == False):
+                width_of_new_window = batch
                 x_4d = convert_to_4d(x)
 
                 for split_index1 in range(nz // width_of_new_window):
@@ -197,8 +212,8 @@ if __name__ == "__main__":
                                         attr=pd.DataFrame(x_split)
                                         attr.columns=feature_list
 
-                                        print(f'constructing batch SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
-                                        m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
+                                        print(f'constructing batch SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
+                                        m=popsom.map(xdim, ydim, alpha, train)
 
                                         labels = np.array(list(range(len(x_split))))
                                         if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
@@ -208,8 +223,13 @@ if __name__ == "__main__":
 
                                         neurons = m.all_neurons()
                                         # print("neurons: ", neurons)
-                                        if args.save_neuron_values == True:
-                                                np.save(f'neurons_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+                                        if save_neuron_values == True:
+                                                np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+                                        
+                                        # print changes in neuron weights
+                                        neuron_weights = m.weight_history
+                                        term = m.final_epoch
+                                        np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}_{split_index1}-{split_index2}-{split_index3}.npy', neuron_weights, allow_pickle=True)
 
                 # at the end, load the entire domain back to m to assign cluster id
                 attr=pd.DataFrame(x)
@@ -217,12 +237,12 @@ if __name__ == "__main__":
                 labels = np.array(list(range(len(x))))
                 m.fit_notraining(attr, labels, neurons)
         else: # if the run is initialized as a no training run, load these values
-                print(f'constructing pre-trained SOM for xdim={args.xdim}, ydim={args.ydim}, alpha={args.alpha}, train={args.train}...', flush=True)
-                m=popsom.map(args.xdim, args.ydim, args.alpha, args.train)
+                print(f'constructing pre-trained SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}...', flush=True)
+                m=popsom.map(xdim, ydim, alpha, train)
                 attr=pd.DataFrame(x)
                 attr.columns=feature_list
                 labels = np.array(list(range(len(x))))
-                neurons = np.load(args.neurons_path)
+                neurons = np.load(neurons_path)
                 m.fit_notraining(attr,labels,neurons)
 
         
@@ -292,7 +312,7 @@ if __name__ == "__main__":
         
         cluster_id = assign_cluster_id(nx, ny, nz, data_Xneuron, data_Yneuron, clusters)
 
-        f5 = h5.File(f'clusters_{lap}_{args.xdim}{args.ydim}_{args.alpha}_{args.train}.h5', 'w')
+        f5 = h5.File(f'clusters_{lap}_{xdim}{ydim}_{alpha}_{train}.h5', 'w')
         dsetx = f5.create_dataset("cluster_id",  data=cluster_id)
         f5.close()
         print("Done writing the cluster ID file")
