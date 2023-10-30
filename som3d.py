@@ -199,6 +199,7 @@ if __name__ == "__main__":
         elif (batch is not None) & (pretrained == False):
                 width_of_new_window = batch
                 x_4d = convert_to_4d(x)
+                history = []
 
                 for split_index1 in range(nz // width_of_new_window):
                         for split_index2 in range(ny // width_of_new_window):
@@ -229,6 +230,7 @@ if __name__ == "__main__":
                                         # print changes in neuron weights
                                         neuron_weights = m.weight_history
                                         term = m.final_epoch
+                                        # history.extend(neuron_weights)
                                         np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}_{split_index1}-{split_index2}-{split_index3}.npy', neuron_weights, allow_pickle=True)
 
                 # at the end, load the entire domain back to m to assign cluster id
@@ -236,6 +238,8 @@ if __name__ == "__main__":
                 attr.columns=feature_list
                 labels = np.array(list(range(len(x))))
                 m.fit_notraining(attr, labels, neurons)
+
+                # np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{train}_{batch}.npy', np.array(history), allow_pickle=True)
         else: # if the run is initialized as a no training run, load these values
                 print(f'constructing pre-trained SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}...', flush=True)
                 m=popsom.map(xdim, ydim, alpha, train)
