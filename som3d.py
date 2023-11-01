@@ -27,7 +27,8 @@ from sklearn import metrics
 import argparse
 
 parser = argparse.ArgumentParser(description='popsom code')
-parser.add_argument("--features_path", type=str, dest='features_path', default='/mnt/ceph/users/tha10/SOM-tests/hr-d3x640/features_4j1b1e_2800.h5')
+parser.add_argument("--features_path", type=str, dest='features_path', default='/mnt/ceph/users/tha10/SOM-tests/hr-d3x640/')
+parser.add_argument("--file", type=str, dest='file', default='features_4j1b1e_2800.h5')
 parser.add_argument('--xdim', type=int, dest='xdim', default=10, help='Map x size')
 parser.add_argument('--ydim', type=int, dest='ydim', default=10, help='Map y size')
 parser.add_argument('--alpha', type=float, dest='alpha', default=0.5, help='Learning parameter')
@@ -112,6 +113,64 @@ def assign_cluster_id(nx : int, ny : int, nz : int, data_Xneuron : np.ndarray, d
                                 cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
         return cluster_id
 
+def batch_training(full_data, batch, feature_list, save_neuron_values=True):
+        """Function to perform batch training on a full domain
+
+        Args:
+            full_data (numpy ndarray): N x F array, where N is the number of data points and F is the number of features
+            batch (int): width of the domain to be trained on
+            feature_list (list of str): list of feature names
+
+        Returns:
+            class: popsom map
+        """
+        width_of_new_window = batch
+        x_4d = convert_to_4d(full_data)
+        history = []
+
+        for split_index1 in range(nz // width_of_new_window):
+                start_index_crop_z = split_index1 * width_of_new_window
+                for split_index2 in range(ny // width_of_new_window):
+                        start_index_crop_y = split_index2 * width_of_new_window
+                        for split_index3 in range(nx // width_of_new_window):
+                                start_index_crop_x = split_index3 * width_of_new_window
+                                
+                                x_split_4d = get_smaller_domain(x_4d, width_of_new_window, start_index_crop_x, start_index_crop_y, start_index_crop_z)
+
+                                x_split = flatten_to_2d(x_split_4d)
+                                attr=pd.DataFrame(x_split)
+                                attr.columns=feature_list
+
+                                print(f'constructing batch SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
+                                m=popsom.map(xdim, ydim, alpha, train)
+
+                                labels = np.array(list(range(len(x_split))))
+                                if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
+                                        m.fit(attr,labels,restart=False)
+                                else: # if first window, then initiate random neuron values, else use neurons from last batch
+                                        m.fit(attr,labels,restart=True, neurons=neurons)
+
+                                neurons = m.all_neurons()
+                                # print("neurons: ", neurons)
+                                if save_neuron_values == True:
+                                        np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+                                
+                                # print changes in neuron weights
+                                neuron_weights = m.weight_history
+                                term = m.final_epoch
+                                history.extend(neuron_weights)
+                                # np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}_{split_index1}-{split_index2}-{split_index3}.npy', neuron_weights, allow_pickle=True)
+
+        # at the end, load the entire domain back to m to assign cluster id
+        attr=pd.DataFrame(full_data)
+        attr.columns=feature_list
+        labels = np.array(list(range(len(x))))
+        m.fit_notraining(attr, labels, neurons)
+
+        np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{train}_combined.npy', np.array(history), allow_pickle=True)
+
+        return m
+
 
 if __name__ == "__main__":
 
@@ -141,6 +200,7 @@ if __name__ == "__main__":
 
         # CLI arguments
         features_path = args.features_path
+        file_name = args.file
         xdim = args.xdim
         ydim = args.ydim
         alpha = args.alpha
@@ -154,7 +214,7 @@ if __name__ == "__main__":
 
         # f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
         # f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
-        f5 = h5.File(features_path, 'r')
+        f5 = h5.File(features_path+file_name, 'r')
 
         x = f5['features'][()]
 
@@ -197,49 +257,7 @@ if __name__ == "__main__":
                 term = m.final_epoch
                 np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}.npy', neuron_weights, allow_pickle=True)
         elif (batch is not None) & (pretrained == False):
-                width_of_new_window = batch
-                x_4d = convert_to_4d(x)
-                history = []
-
-                for split_index1 in range(nz // width_of_new_window):
-                        for split_index2 in range(ny // width_of_new_window):
-                               for split_index3 in range(nx // width_of_new_window):
-                                        start_index_crop_x = split_index1 * width_of_new_window
-                                        start_index_crop_y = split_index2 * width_of_new_window
-                                        start_index_crop_z = split_index3 * width_of_new_window
-                                        x_split_4d = get_smaller_domain(x_4d, width_of_new_window, start_index_crop_x, start_index_crop_y, start_index_crop_z)
-
-                                        x_split = flatten_to_2d(x_split_4d)
-                                        attr=pd.DataFrame(x_split)
-                                        attr.columns=feature_list
-
-                                        print(f'constructing batch SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
-                                        m=popsom.map(xdim, ydim, alpha, train)
-
-                                        labels = np.array(list(range(len(x_split))))
-                                        if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
-                                                m.fit(attr,labels,restart=False)
-                                        else: # if first window, then initiate random neuron values, else use neurons from last batch
-                                                m.fit(attr,labels,restart=True, neurons=neurons)
-
-                                        neurons = m.all_neurons()
-                                        # print("neurons: ", neurons)
-                                        if save_neuron_values == True:
-                                                np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
-                                        
-                                        # print changes in neuron weights
-                                        neuron_weights = m.weight_history
-                                        term = m.final_epoch
-                                        history.extend(neuron_weights)
-                                        # np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}_{split_index1}-{split_index2}-{split_index3}.npy', neuron_weights, allow_pickle=True)
-
-                # at the end, load the entire domain back to m to assign cluster id
-                attr=pd.DataFrame(x)
-                attr.columns=feature_list
-                labels = np.array(list(range(len(x))))
-                m.fit_notraining(attr, labels, neurons)
-
-                np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{train}_combined.npy', np.array(history), allow_pickle=True)
+                m = batch_training(x, batch, feature_list, save_neuron_values)
         else: # if the run is initialized as a no training run, load these values
                 print(f'constructing pre-trained SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}...', flush=True)
                 m=popsom.map(xdim, ydim, alpha, train)
