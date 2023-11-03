@@ -113,7 +113,7 @@ def assign_cluster_id(nx : int, ny : int, nz : int, data_Xneuron : np.ndarray, d
                                 cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
         return cluster_id
 
-def batch_training(full_data, batch, feature_list, save_neuron_values=True):
+def batch_training(full_data, batch, feature_list, save_neuron_values=False):
         """Function to perform batch training on a full domain
 
         Args:
