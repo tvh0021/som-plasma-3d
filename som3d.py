@@ -333,7 +333,7 @@ if __name__ == "__main__":
         print("Assigning clusters", flush=True)
         
         cluster_id = assign_cluster_id(nx, ny, nz, data_Xneuron, data_Yneuron, clusters)
-        np.save(f'clusters_{lap}_{xdim}{ydim}_{alpha}_{train}.npy', cluster_id, allow_pickle=True)
+        np.save(f'clusters_{lap}_{xdim}{ydim}_{alpha}_{train}_{batch}.npy', cluster_id, allow_pickle=True)
 
         # f5 = h5.File(f'clusters_{lap}_{xdim}{ydim}_{alpha}_{train}.h5', 'w')
         # dsetx = f5.create_dataset("cluster_id",  data=cluster_id)
