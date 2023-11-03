@@ -152,8 +152,8 @@ def batch_training(full_data, batch, feature_list, save_neuron_values=False):
 
                                 neurons = m.all_neurons()
                                 # print("neurons: ", neurons)
-                                if save_neuron_values == True:
-                                        np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+                                # if save_neuron_values == True:
+                                        # np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
                                 
                                 # print changes in neuron weights
                                 neuron_weights = m.weight_history
