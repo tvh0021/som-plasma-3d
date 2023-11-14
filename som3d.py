@@ -218,7 +218,6 @@ if __name__ == "__main__":
 
         x = f5['features'][()]
 
-        y = f5['target'][()]
         feature_list = f5['names'][()]
 
         feature_list = [n.decode('utf-8') for n in feature_list]
@@ -395,31 +394,6 @@ if __name__ == "__main__":
                                                 edgecolors="none",
                                                 rasterized=True,
                                                 )
-
-                                if False:
-                                        #visualize most dissipative points
-                                        xx = x[:,icomp]
-                                        yy = x[:,jcomp]
-                                        zz = y[:]
-
-                                        xxd = xx[np.where(np.abs(zz) > 0.020)]
-                                        yyd = yy[np.where(np.abs(zz) > 0.020)]
-                                        zzd = zz[np.where(np.abs(zz) > 0.020)]
-
-                                        xxd = xxd[::100]
-                                        yyd = yyd[::100]
-                                        zzd = zzd[::100]
-
-                                        print("found {} points above threshold".format(len(xxd)))
-
-                                        ax.scatter(xxd,yyd,c=zzd,
-                                                                cmap='inferno',
-                                                                vmin=-0.015,
-                                                                vmax= 0.015,
-                                                                marker='.',
-                                                                s=0.05,
-                                                                alpha=0.1,
-                                                                )
 
                                 if jcomp == nfea-1:
                                         ax.set_xlabel('{}'.format(feature_list[icomp]))
