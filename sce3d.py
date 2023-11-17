@@ -4,6 +4,7 @@ import collections
 from collections import defaultdict
 import sys, os
 import glob
+import argparse
 
 # visualization
 import matplotlib.pyplot as plt
@@ -84,12 +85,19 @@ def create_mask(img, cid):
     return img_masked
 
 
+parser = argparse.ArgumentParser(description='SCE code')
+parser.add_argument('--folder', type=str, dest='folder', help='Folder name')
+parser.add_argument('--slice', type=int, dest='slice', default=580, help='Slice number')
+parser.add_argument('--subfolder', type=str, dest='subfolder', default='SCE', help='Subfolder name')
+
+args = parser.parse_args()
+
 if __name__ == "__main__":
 
-    folder = 'som-2j2b2e'
+    folder = args.folder
     os.chdir(f'/mnt/home/tha10/ceph/SOM-tests/hr-d3x640/{folder}/')
     cluster_files = glob.glob('clusters*.npy')
-    slice_number = 580
+    slice_number = args.slice
 
     #--------------------------------------------------
     # plotting env
@@ -116,7 +124,7 @@ if __name__ == "__main__":
 
     runid = 0
     if runid == 0:
-        datadir = folder
+        subfolder = args.subfolder
         runs = cluster_files
     else:
         print('run not implemented yet')
@@ -235,7 +243,7 @@ if __name__ == "__main__":
                                     vmax = 1.0,
                                     cmap='binary',
                                     )
-                            fig.savefig(datadir+'/intersect_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
+                            fig.savefig(subfolder+'/intersect_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
 
 
                         #--------------------------------------------------
@@ -254,7 +262,7 @@ if __name__ == "__main__":
                                     vmax = 1.0,
                                     cmap='binary',
                                     )
-                            fig.savefig(datadir + '/union_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
+                            fig.savefig(subfolder + '/union_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
 
                         #--------------------------------------------------
 
@@ -273,7 +281,7 @@ if __name__ == "__main__":
                                     vmax = S,
                                     cmap='seismic',
                                     )
-                            fig.savefig(datadir + '/signalstrength_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
+                            fig.savefig(subfolder + '/signalstrength_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
 
                         #--------------------------------------------------
                         # Union quality of two masked arrays, Q
@@ -296,7 +304,7 @@ if __name__ == "__main__":
                                     vmax = Q,
                                     cmap='YlGn',
                                     )
-                            fig.savefig(datadir+ '/quality_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
+                            fig.savefig(subfolder+ '/quality_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
 
 
 
@@ -322,7 +330,7 @@ if __name__ == "__main__":
                                     cmap='plasma',
                                     plot_log = True,
                                     )
-                            fig.savefig(datadir + '/SQU_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
+                            fig.savefig(subfolder + '/SQU_map1-{}_map2-{}_id1-{}_id2-{}.png'.format(run, runC, cid, cidC))
 
 
                         # append these measures to the mapping dictionary
@@ -351,7 +359,7 @@ if __name__ == "__main__":
 
                 multimap_mapping[run][cid] = (total_SQ_scalar, total_mask)
 
-                if True: #TRUE
+                if False: #TRUE
                     #print('plotting total SQU...', np.log10(total_SQ), np.log10(np.min(total_mask)), np.log10(np.max(total_mask)) )
                     print('plotting total SQU:', total_SQ_scalar, 'vs sum', total_SQ_from_matrix,' min:', np.min(total_mask), ' max:', np.max(total_mask) )
                     imshow(axs[0],
@@ -361,7 +369,7 @@ if __name__ == "__main__":
                            vmax = np.max(total_mask),  #10, np.max(total_mask), #NOTE: 1e7 is about maximum value we seem to get
                            cmap='Reds',
                            )
-                    fig.savefig(datadir + '/SQ_map1-{}_id1-{}.png'.format(run, cid))
+                    fig.savefig(subfolder + '/SQ_map1-{}_id1-{}.png'.format(run, cid))
 
                     #log version
                     imshow(axs[0],
@@ -372,7 +380,7 @@ if __name__ == "__main__":
                            cmap='Blues',
                            plot_log = True,
                            )
-                    fig.savefig(datadir + '/SQ_map1-{}_id1-{}_log.png'.format(run, cid))
+                    fig.savefig(subfolder + '/SQ_map1-{}_id1-{}_log.png'.format(run, cid))
 
                     print('\n')
 
@@ -382,7 +390,7 @@ if __name__ == "__main__":
     # end of loop over runs
 
     # print all map2map comparison values
-    if False:
+    if True:
         print('mappings:-----------------------')
         #print(mapping)
 
