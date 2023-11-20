@@ -50,18 +50,12 @@ def imshow(ax,
         vmin = np.log10(vmin)
         vmax = np.log10(vmax)
 
-    mgrid = mgrid.T
-    im = ax.imshow(mgrid,
-              extent=extent,
-              origin='lower',
-              interpolation='nearest',
-              cmap = cmap,
-              vmin = vmin,
-              vmax = vmax,
-              aspect=aspect,
-              #vmax = Nrank,
-              #alpha=0.5
-              )
+    # mgrid = mgrid.T
+    im = ax.pcolormesh(mgrid,
+                       cmap=cmap,
+                       vmin=vmin,
+                       vmax=vmax,
+                       shading='auto')
     return im
 
 # read array from clusterID.npy
@@ -169,7 +163,7 @@ if __name__ == "__main__":
         nids = len(ids) #number of cluster ids in this run
 
         # visualize first image as an example
-        if False:
+        if True:
             imshow(axs[0],
                     clusters[slice_number,:,:],
                     xmin,xmax,ymin,ymax,
@@ -177,7 +171,7 @@ if __name__ == "__main__":
                     vmax = nids,
                     cmap='Spectral',
                     )
-            fig.savefig('stack_{}.png'.format(run))
+            fig.savefig(subfolder + '/stack_{}.png'.format(run))
 
 
         #pick one/first image as a reference for plotting
@@ -359,7 +353,7 @@ if __name__ == "__main__":
 
                 multimap_mapping[run][cid] = (total_SQ_scalar, total_mask)
 
-                if False: #TRUE
+                if True: #TRUE
                     #print('plotting total SQU...', np.log10(total_SQ), np.log10(np.min(total_mask)), np.log10(np.max(total_mask)) )
                     print('plotting total SQU:', total_SQ_scalar, 'vs sum', total_SQ_from_matrix,' min:', np.min(total_mask), ' max:', np.max(total_mask) )
                     imshow(axs[0],
@@ -372,15 +366,15 @@ if __name__ == "__main__":
                     fig.savefig(subfolder + '/SQ_map1-{}_id1-{}.png'.format(run, cid))
 
                     #log version
-                    imshow(axs[0],
-                           total_mask,
-                           xmin,xmax,ymin,ymax,
-                           vmin = np.min(total_mask),    #0.1 np.min(total_mask),
-                           vmax = np.max(total_mask),   #10, np.max(total_mask), #NOTE: 1e7 is about maximum value we seem to get
-                           cmap='Blues',
-                           plot_log = True,
-                           )
-                    fig.savefig(subfolder + '/SQ_map1-{}_id1-{}_log.png'.format(run, cid))
+                    # imshow(axs[0],
+                    #        total_mask,
+                    #        xmin,xmax,ymin,ymax,
+                    #        vmin = np.min(total_mask),    #0.1 np.min(total_mask),
+                    #        vmax = np.max(total_mask),   #10, np.max(total_mask), #NOTE: 1e7 is about maximum value we seem to get
+                    #        cmap='Blues',
+                    #        plot_log = True,
+                    #        )
+                    # fig.savefig(subfolder + '/SQ_map1-{}_id1-{}_log.png'.format(run, cid))
 
                     print('\n')
 
@@ -390,7 +384,7 @@ if __name__ == "__main__":
     # end of loop over runs
 
     # print all map2map comparison values
-    if True:
+    if False:
         print('mappings:-----------------------')
         #print(mapping)
 
