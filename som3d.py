@@ -15,9 +15,9 @@ from numba import njit, prange
 import h5py as h5
 import sys, os
 
-from utils_plot2d import read_var
+# from utils_plot2d import read_var
 from utils_plot2d import Conf
-from utils_plot2d import imshow
+# from utils_plot2d import imshow
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
@@ -29,14 +29,14 @@ import argparse
 parser = argparse.ArgumentParser(description='popsom code')
 parser.add_argument("--features_path", type=str, dest='features_path', default='/mnt/ceph/users/tha10/SOM-tests/hr-d3x640/')
 parser.add_argument("--file", type=str, dest='file', default='features_4j1b1e_2800.h5')
-parser.add_argument('--xdim', type=int, dest='xdim', default=10, help='Map x size')
-parser.add_argument('--ydim', type=int, dest='ydim', default=10, help='Map y size')
+parser.add_argument('--xdim', type=int, dest='xdim', default=20, help='Map x size')
+parser.add_argument('--ydim', type=int, dest='ydim', default=20, help='Map y size')
 parser.add_argument('--alpha', type=float, dest='alpha', default=0.5, help='Learning parameter')
 parser.add_argument('--train', type=int, dest='train', default=10000, help='Number of training steps')
 parser.add_argument('--batch', type=int, dest='batch', default=None, help='Width of domain in a batch', required=False)
-parser.add_argument('--pretrained', type=bool, dest='pretrained', default=False, help='Is the model is pretrained?', required=False)
+parser.add_argument('--pretrained', action="store_true", dest='pretrained', help='Pass this argument if supplying a pre-trained model', required=False)
 parser.add_argument('--neurons_path', type=str, dest='neurons_path', default=None, help='Path to file containing neuron values', required=False)
-parser.add_argument('--save_neuron_values', type=bool, dest='save_neuron_values', default=False, help='Save neuron values to file?', required=False)
+parser.add_argument('--save_neuron_values', dest='save_neuron_values', help='Pass this argument if you want to save neuron values', action="store_true")
 
 args = parser.parse_args()
 
@@ -152,8 +152,9 @@ def batch_training(full_data, batch, feature_list, save_neuron_values=False):
 
                                 neurons = m.all_neurons()
                                 # print("neurons: ", neurons)
-                                # if save_neuron_values == True:
-                                        # np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+                                if save_neuron_values == True:
+                                        np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
+                                        print("Data being saved")
                                 
                                 # print changes in neuron weights
                                 neuron_weights = m.weight_history
@@ -195,9 +196,6 @@ if __name__ == "__main__":
         xmax = 1.0
         ymax = 1.0
 
-        laps = [2800] # all the data laps to process
-        lap = laps[0] # data file number
-
         # CLI arguments
         features_path = args.features_path
         file_name = args.file
@@ -209,6 +207,12 @@ if __name__ == "__main__":
         pretrained = args.pretrained
         neurons_path = args.neurons_path
         save_neuron_values = args.save_neuron_values
+        
+        # if save_neuron_values is None:
+        #         save_neuron_values = False
+        print("Save neuron values: ", save_neuron_values)
+        
+        lap = file_name.split("_")[-1].strip(".h5") # all the data laps to process
 
         nx,ny,nz = 640, 640, 640
 
@@ -251,12 +255,14 @@ if __name__ == "__main__":
                 # print("neurons: ", neurons)
                 if save_neuron_values == True:
                         np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}.npy', neurons, allow_pickle=True)
+                        print("Data being saved")
                 # print changes in neuron weights
                 neuron_weights = m.weight_history
                 term = m.final_epoch
                 np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}.npy', neuron_weights, allow_pickle=True)
         elif (batch is not None) & (pretrained == False):
                 m = batch_training(x, batch, feature_list, save_neuron_values)
+                print("Saved neuron values : ", save_neuron_values)
         else: # if the run is initialized as a no training run, load these values
                 print(f'constructing pre-trained SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}...', flush=True)
                 m=popsom.map(xdim, ydim, alpha, train)
@@ -265,8 +271,6 @@ if __name__ == "__main__":
                 labels = np.array(list(range(len(x))))
                 neurons = np.load(neurons_path)
                 m.fit_notraining(attr,labels,neurons)
-
-        
 
         # print(f"convergence at {args.train} steps = {m.convergence()}")
 

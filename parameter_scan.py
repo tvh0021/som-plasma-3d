@@ -11,22 +11,26 @@ parser.add_argument('--save_neuron_values', type=bool, dest='save_neuron_values'
 args = parser.parse_args()
 
 path = args.script_location
-xdim = list(range(10, 21, 5))
+xdim = list(range(15, 26, 5))
 alpha = [0.05, 0.1, 0.5]
-train = [10000, 50000, 100000]
+train = [10000, 100000]
 batch = [160, 320]
 save_neuron_values = False
 features_path = args.features_path
 file = args.file
 
+neuron_flag = ""
+if save_neuron_values:
+    neuron_flag = "--save_neuron_values"
+
 def run_file(path, xdim, alpha, train, batch, save_neuron_values, features_path, file):
     dim = xdim
-    os.system("python3 " + path + " --xdim " + str(dim) + " --ydim " + str(dim) + " --alpha " + str(alpha) + " --train " + str(train) + " --batch " + str(batch) + " --save_neuron_values " + str(save_neuron_values) + " --features_path " + features_path + " --file " + file)
+    os.system("python3 " + path + " --xdim " + str(dim) + " --ydim " + str(dim) + " --alpha " + str(alpha) + " --train " + str(train) + " --batch " + str(batch) + neuron_flag + " --features_path " + features_path + " --file " + file)
     print("Finished dim: " + str(dim) + ", alpha: " + str(alpha) + ", train: " + str(train) + ", batch: " + str(batch) , flush=True)
 
 def print_excecution(path, xdim, alpha, train, batch, save_neuron_values, features_path, file):
     dim = xdim
-    print("python3 " + path + " --xdim " + str(dim) + " --ydim " + str(dim) + " --alpha " + str(alpha) + " --train " + str(train) + " --batch " + str(batch) + " --save_neuron_values " + str(save_neuron_values) + " --features_path '" + features_path + "' --file '" + file + "' &")
+    print("python3 " + path + " --xdim " + str(dim) + " --ydim " + str(dim) + " --alpha " + str(alpha) + " --train " + str(train) + " --batch " + str(batch) + neuron_flag + " --features_path '" + features_path + "' --file '" + file + "' &")
 
 if __name__ == '__main__':
     for dim in xdim:

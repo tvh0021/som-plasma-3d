@@ -89,7 +89,7 @@ args = parser.parse_args()
 if __name__ == "__main__":
 
     folder = args.folder
-    os.chdir(f'/mnt/home/tha10/ceph/SOM-tests/hr-d3x640/{folder}/')
+    os.chdir(folder)
     cluster_files = glob.glob('clusters*.npy')
     slice_number = args.slice
 
