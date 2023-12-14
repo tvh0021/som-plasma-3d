@@ -5,6 +5,7 @@ from collections import defaultdict
 import sys, os
 import glob
 import argparse
+import tracemalloc
 
 # visualization
 import matplotlib.pyplot as plt
@@ -141,6 +142,8 @@ if __name__ == "__main__":
     mapping = InfNestedDict()
 
     multimap_mapping = InfNestedDict()
+    
+    
 
     # loop over data files reading image by image
     for i in range(len(runs)):
@@ -148,6 +151,8 @@ if __name__ == "__main__":
         print('-----------------------')
         print(run)
 
+        tracemalloc.start()
+        
         clusters = load_som_npy(run)
 
         # nx x ny size maps and ni subimages
@@ -380,8 +385,12 @@ if __name__ == "__main__":
                     # fig.savefig(subfolder + '/SQ_map1-{}_id1-{}_log.png'.format(run, cid))
 
                     print('\n')
-
-
+        
+        print("Memory usage: ",tracemalloc.get_traced_memory(), flush=True)
+                  
+        
+    print("Total memory usage: ",tracemalloc.get_traced_memory(), flush=True)
+    tracemalloc.stop()
 
     #--------------------------------------------#
     # end of loop over runs
