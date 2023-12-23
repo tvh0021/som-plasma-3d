@@ -113,7 +113,7 @@ def assign_cluster_id(nx : int, ny : int, nz : int, data_Xneuron : np.ndarray, d
                                 cluster_id[iz,iy,ix] = clusters[int(data_Xneuron[j]), int(data_Yneuron[j])]
         return cluster_id
 
-def batch_training(full_data, batch, feature_list, save_neuron_values=False):
+def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, save_neuron_values=False):
         """Function to perform batch training on a full domain
 
         Args:
@@ -127,6 +127,8 @@ def batch_training(full_data, batch, feature_list, save_neuron_values=False):
         width_of_new_window = batch
         x_4d = convert_to_4d(full_data)
         history = []
+        nd = int(np.cbrt(x_4d.shape[0]))
+        nz, ny, nx = nd, nd, nd
 
         for split_index1 in range(nz // width_of_new_window):
                 start_index_crop_z = split_index1 * width_of_new_window
@@ -208,13 +210,12 @@ if __name__ == "__main__":
         neurons_path = args.neurons_path
         save_neuron_values = args.save_neuron_values
         
-        # if save_neuron_values is None:
-        #         save_neuron_values = False
-        print("Save neuron values: ", save_neuron_values)
+        if save_neuron_values is None:
+                save_neuron_values = False
         
-        lap = file_name.split("_")[-1].strip(".h5") # all the data laps to process
+        lap = file_name.split("_")[-1].split(".h5")[0] # all the data laps to process
 
-        nx,ny,nz = 640, 640, 640
+        
 
         # f5 = h5.File('/mnt/home/tha10/SOM-tests/hr-d3x640/features_4j1b1e_{}.h5'.format(lap), 'r')
         # f5 = h5.File('/Users/tha/Downloads/Archive/features_4j1b1e_{}.h5'.format(lap), 'r')
@@ -227,6 +228,10 @@ if __name__ == "__main__":
         feature_list = [n.decode('utf-8') for n in feature_list]
         f5.close()
         print(f"File loaded, parameters: {lap}-{xdim}-{ydim}-{alpha}-{train}-{batch}", flush=True)
+        
+        nd = int(np.cbrt(x.shape[0]))
+        nz,ny,nx = nd,nd,nd
+        print("Shape of data: ", (nx,ny,nz), flush=True)
 
         # print(feature_list)
         # print("shape after x:", np.shape(x))
@@ -261,8 +266,10 @@ if __name__ == "__main__":
                 term = m.final_epoch
                 np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}.npy', neuron_weights, allow_pickle=True)
         elif (batch is not None) & (pretrained == False):
-                m = batch_training(x, batch, feature_list, save_neuron_values)
+                print(f"Constructing SOM batch training for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}, batch={batch}", flush=True)
+                m_batch = batch_training(x, xdim, ydim, alpha, train, batch, feature_list, save_neuron_values)
                 print("Saved neuron values : ", save_neuron_values)
+                m = m_batch
         else: # if the run is initialized as a no training run, load these values
                 print(f'constructing pre-trained SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}...', flush=True)
                 m=popsom.map(xdim, ydim, alpha, train)

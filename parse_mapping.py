@@ -60,7 +60,7 @@ if __name__ == '__main__':
             os.makedirs(ranked_clusters_dir)
         
         for i in range(len(map_list)):
-            origin_file_name = '{}/SQ_map1-clusters_{}.npy_id1-{}.png'.format(args.file_path, map_list[i][2], map_list[i][1])
+            origin_file_name = '{}/mask3d-clusters_{}.npy-id{}.png'.format(args.file_path, map_list[i][2], map_list[i][1])
             destination_file_name = '{}/ranked-clusters/{}'.format(args.file_path, makeFilename(i))
             shutil.copyfile(origin_file_name, destination_file_name)
             
@@ -75,9 +75,6 @@ if __name__ == '__main__':
     
     # compute the derivative of the gsum values to find the drop
     gsum_deriv = savgol_filter(smoothed_map, len(map_list)//smooth_fraction, order, deriv=1) / smoothed_map
-    
-    if False:
-        np.save(args.file_path + f"/gsum_deriv_smoothed_{smooth_fraction}_{order}.npy", gsum_deriv)
     
     # iterate through the derivative and find the local minima
     threshold = args.threshold
@@ -158,9 +155,9 @@ if __name__ == '__main__':
             for instance in remapped_clusters[cluster]:
                 # print("Currently analyzing binary map : ", instance)
                 
-                signal_strength_map = np.load(args.file_path + "/mask-clusters_{}.npy-id{}.npy".format(instance[2],instance[1])) # load the binary map; placeholder for now because I don't have the binary maps yet
+                signal_strength_map = np.load(args.file_path + "/mask-clusters_{}.npy-id{}.npy".format(instance[2],instance[1])) # load the binary map
                 # print(instance[0])
-                all_binary_maps[int(cluster)][:,:] += signal_strength_map # binary map should have dimensions 640x640
+                all_binary_maps[int(cluster)][:,:,:] += signal_strength_map # binary map should have dimensions 640x640
                 
         # save the new binary map
         np.save(args.file_path + "/all_binary_maps.npy", all_binary_maps)

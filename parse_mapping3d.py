@@ -1,10 +1,11 @@
 import argparse
-import os
+import os, sys
 import matplotlib.pyplot as plt
 import shutil
 import numpy as np
 import h5py as h5
 from scipy.signal import savgol_filter
+# from numba import njit
 
 parser = argparse.ArgumentParser(description="Use multimap mapping to analyze and segment groups of features")
 parser.add_argument('--file_path', type=str, dest='file_path', help='Multimap mapping file path')
@@ -14,6 +15,11 @@ parser.add_argument("--threshold", type=float, dest='threshold', default=-0.015,
 parser.add_argument("--reference_file", type=str, dest='reference_file', default='/mnt/home/tha10/ceph/SOM-tests/pipeline-test/features_2j1b1e0r_2800.h5', help="Reference file to compare the clusters to", required=False)
 parser.add_argument('--slice', type=int, dest='slice', default=580, help='Slice number, make sure this matches the slice number in the sce_slice.py call')
 args = parser.parse_args()
+
+# @njit(parallel=True)
+# def addBinaryMaps (current_map : np.ndarray, add_map : np.ndarray) -> np.ndarray:
+#     return current_map + add_map
+    
 
 def makeFilename (n : int) -> str:
     if n < 10:
@@ -51,7 +57,7 @@ if __name__ == '__main__':
     # sort the list based on gsum value
     map_list.sort(key=lambda map_list: map_list[0], reverse=True)
     print("Sorted map", map_list[0])
-    print("Length of sorted map", len(map_list))
+    print("Length of sorted map", len(map_list), flush=True)
     
     # now iterate through the list and copy the files to the appropriate cluster folder
     if args.copy_clusters:
@@ -60,14 +66,14 @@ if __name__ == '__main__':
             os.makedirs(ranked_clusters_dir)
         
         for i in range(len(map_list)):
-            origin_file_name = '{}/mask3d-clusters_{}.npy_id1-{}.png'.format(args.file_path, map_list[i][2], map_list[i][1])
+            origin_file_name = '{}/mask3d-clusters_{}.npy_id{}.png'.format(args.file_path, map_list[i][2], map_list[i][1])
             destination_file_name = '{}/ranked-clusters/{}'.format(args.file_path, makeFilename(i))
             shutil.copyfile(origin_file_name, destination_file_name)
             
         print("Done copying files")
         
     # apply a Savitzky-Golay filter to smooth the gsum values
-    smooth_fraction = 5
+    smooth_fraction = 10
     order = 4
     smoothed_map = np.array([map_list[i][0] for i in range(len(map_list))])
     print("Applying Savitzky-Golay filter")
@@ -75,9 +81,6 @@ if __name__ == '__main__':
     
     # compute the derivative of the gsum values to find the drop
     gsum_deriv = savgol_filter(smoothed_map, len(map_list)//smooth_fraction, order, deriv=1) / smoothed_map
-    
-    if False:
-        np.save(args.file_path + f"/gsum_deriv_smoothed_{smooth_fraction}_{order}.npy", gsum_deriv)
     
     # iterate through the derivative and find the local minima
     threshold = args.threshold
@@ -89,7 +92,7 @@ if __name__ == '__main__':
         plt.figure(dpi=300)
         plt.plot(cluster_order, gsum_deriv, marker='o', c='k', markersize=2, linewidth=1)
         # plt.yscale('log')
-        plt.ylim(-0.7, 0.0)
+        plt.ylim(min(gsum_deriv) / 8, 0.0)
         plt.title(f"Sorted gsum derivatives")
         plt.xlabel("Ranked clusters")
         plt.ylabel("Gsum derivative")
@@ -111,7 +114,7 @@ if __name__ == '__main__':
             if (gsum_deriv[i] > threshold) & (threshold_crossed == False):
                 threshold_crossed = True
         
-        print("Peak locations", peak_locations)
+        print("Peak locations", peak_locations, flush=True)
         
         # from the local minima, find the ranges of the clusters
         cluster_ranges = []
@@ -124,8 +127,8 @@ if __name__ == '__main__':
             if i == len(peak_locations)-2:
                 cluster_ranges.append([peak_locations[i+1], len(map_list)])
         
-        print("Cluster ranges", cluster_ranges)
-        print("Number of clusters", len(cluster_ranges))
+        print("Cluster ranges", cluster_ranges, flush=True)
+        print("Number of clusters", len(cluster_ranges), flush=True)
         
         
         # map the clusters back into output clusters
@@ -146,21 +149,27 @@ if __name__ == '__main__':
                 # print (i)
                 remapped_clusters[key_name].append(map_list[j])
         
-        print("Length of remapped clusters : ", [len(remapped_clusters[k]) for k in remapped_clusters.keys()])
-        print ("First cluster : ", remapped_clusters['0'])
+        print("Length of remapped clusters : ", [len(remapped_clusters[k]) for k in remapped_clusters.keys()], flush=True)
+        # print ("First cluster : ", remapped_clusters['0'])
         
         # add values of the binary map of each cluster to obtain a new map
         # read in the binary map
-        all_binary_maps = np.empty((len(remapped_clusters),640, 640, 640), dtype=float)
+        nd = 128
+        all_binary_maps = np.empty((len(remapped_clusters),nd, nd, nd), dtype=np.float32)
         for cluster in remapped_clusters.keys():
-            print("Currently analyzing cluster : ", cluster)
-            print("Number of instances in cluster : ", len(remapped_clusters[cluster]))
-            for instance in remapped_clusters[cluster]:
-                # print("Currently analyzing binary map : ", instance)
+            # diagnostic
+            # if cluster == "1":
+            #     sys.exit()
+            print("Currently analyzing cluster : ", cluster, flush=True)
+            print("Number of instances in cluster : ", len(remapped_clusters[cluster]), flush=True)
+            
+            # cannot use jax here because it uses too much memory; cannot use numba because it does not support np.load; loading all binary maps in each cluster at once will use more memory, but is also ~30% faster than loading them sequentially and adding to total every step.
+            cluster_binary_map = np.zeros((len(remapped_clusters[cluster]),nd,nd,nd), dtype=np.float32)
+            for i, instance in enumerate(remapped_clusters[cluster]):
+                print("Instance", i, flush=True)
+                cluster_binary_map[i,:,:,:] = np.load(args.file_path + "/mask3d-clusters_{}.npy-id{}.npy".format(instance[2],instance[1]))
                 
-                signal_strength_map = np.load(args.file_path + "/mask3d-clusters_{}.npy-id{}.npy".format(instance[2],instance[1])) # load the binary map
-                # print(instance[0])
-                all_binary_maps[int(cluster),:,:,:] += signal_strength_map # binary map should have dimensions 640x640
+            all_binary_maps[int(cluster),:,:,:] = np.sum(cluster_binary_map, axis=0)
                 
         # save the new binary map
         np.save(args.file_path + "/all_binary_maps.npy", all_binary_maps)

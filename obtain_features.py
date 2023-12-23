@@ -4,6 +4,7 @@ import pandas as pd
 pd.options.display.max_rows = 10
 pd.options.display.float_format = "{:.3f}".format
 
+import os
 import numpy as np
 from random import sample
 # The following line improves formatting when ouputting NumPy arrays.
@@ -30,7 +31,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pytools
 from initialize_turbulence import Configuration_Turbulence as Configuration
 
-import pyvista as pv
+# import pyvista as pv
 # pv.global_theme.anti_aliasing = "msaa"
 # pv.global_theme.background = 'black'
 
@@ -40,7 +41,6 @@ import plotly.io as pio
 pio.renderers.default = "browser"
 
 from scipy import ndimage
-from numba import njit
 
 default_values = {
     "cmap": "hot",
@@ -247,7 +247,7 @@ parser = argparse.ArgumentParser(description='obtain the feature set for SOM tra
 parser.add_argument("--conf_path", type=str, dest='configuration_path', default='/mnt/ceph/users/tha10/sim_snapshots/')
 parser.add_argument("--conf_name", type=str, dest='configuration_name', default='x16.ini')
 parser.add_argument("--snapshot", type=int, dest='lap', default=2800)
-parser.add_argument("--scale", type=bool, dest='scale', default=True)
+parser.add_argument("--scale", dest='scale', action='store_true', help="Scale the dataset")
 parser.add_argument("--crop", type=tuple, dest='crop', default=None)
 parser.add_argument("-v", "--var", nargs='+', type=str, dest='var', default=['b_perp', 'j_perp', 'j_par', 'e_perp'])
 
@@ -255,6 +255,7 @@ args_cli = parser.parse_args()
     
 if __name__ == "__main__":
     do_print = False
+    os.chdir(args_cli.configuration_path)
 
     # args_cli = pytools.parse_args()
     conf_filename = args_cli.configuration_path + args_cli.configuration_name
