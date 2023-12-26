@@ -128,7 +128,8 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
         x_4d = convert_to_4d(full_data)
         history = []
         nz, ny, nx = x_4d.shape[0], x_4d.shape[1], x_4d.shape[2]
-        step_counter = 1
+        epoch = 0
+        number_of_batches = (nz // width_of_new_window) * (ny // width_of_new_window) * (nx // width_of_new_window)
 
         for split_index1 in range(nz // width_of_new_window):
                 start_index_crop_z = split_index1 * width_of_new_window
@@ -144,7 +145,9 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
                                 attr.columns=feature_list
 
                                 print(f'constructing batch SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
-                                m=popsom.map(xdim, ydim, alpha, train, step_counter)
+                                m=popsom.map(xdim, ydim, alpha, train, epoch, number_of_batches)
+                                
+                                print("Training step: ", epoch)
 
                                 labels = np.array(list(range(len(x_split))))
                                 if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
@@ -153,9 +156,8 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
                                         m.fit(attr,labels,restart=True, neurons=neurons)
 
                                 neurons = m.all_neurons()
-                                step_counter = m.step_counter
+                                epoch = m.epoch
                                 
-                                print("Training step: ", step_counter)
                                 # print("neurons: ", neurons)
                                 if save_neuron_values == True:
                                         np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
@@ -163,9 +165,8 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
                                 
                                 # print changes in neuron weights
                                 neuron_weights = m.weight_history
-                                # term = m.final_epoch
                                 history.extend(neuron_weights)
-                                # np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}_{split_index1}-{split_index2}-{split_index3}.npy', neuron_weights, allow_pickle=True)
+                                # np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{epoch}_{split_index1}-{split_index2}-{split_index3}.npy', neuron_weights, allow_pickle=True)
 
         # at the end, load the entire domain back to m to assign cluster id
         attr=pd.DataFrame(full_data)
@@ -173,7 +174,7 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
         labels = np.array(list(range(len(x))))
         m.fit_notraining(attr, labels, neurons)
 
-        np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{train}_combined.npy', np.array(history), allow_pickle=True)
+        np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{train}_{batch}_combined.npy', np.array(history), allow_pickle=True)
 
         return m
 
@@ -266,8 +267,8 @@ if __name__ == "__main__":
                         print("Data being saved")
                 # print changes in neuron weights
                 neuron_weights = m.weight_history
-                term = m.final_epoch
-                np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}.npy', neuron_weights, allow_pickle=True)
+                epoch = m.epoch
+                np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{epoch}.npy', neuron_weights, allow_pickle=True)
         elif (batch is not None) & (pretrained == False):
                 print(f"Constructing SOM batch training for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}, batch={batch}", flush=True)
                 m_batch = batch_training(x, xdim, ydim, alpha, train, batch, feature_list, save_neuron_values)
