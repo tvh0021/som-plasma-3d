@@ -127,8 +127,8 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
         width_of_new_window = batch
         x_4d = convert_to_4d(full_data)
         history = []
-        nd = int(np.cbrt(x_4d.shape[0]))
-        nz, ny, nx = nd, nd, nd
+        nz, ny, nx = x_4d.shape[0], x_4d.shape[1], x_4d.shape[2]
+        step_counter = 1
 
         for split_index1 in range(nz // width_of_new_window):
                 start_index_crop_z = split_index1 * width_of_new_window
@@ -144,7 +144,7 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
                                 attr.columns=feature_list
 
                                 print(f'constructing batch SOM for xdim={xdim}, ydim={ydim}, alpha={alpha}, train={train}, index=[{start_index_crop_z},{start_index_crop_y},{start_index_crop_x}]...', flush=True)
-                                m=popsom.map(xdim, ydim, alpha, train)
+                                m=popsom.map(xdim, ydim, alpha, train, step_counter)
 
                                 labels = np.array(list(range(len(x_split))))
                                 if (split_index1 == 0) & (split_index2 == 0) & (split_index3 == 0):
@@ -153,6 +153,9 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
                                         m.fit(attr,labels,restart=True, neurons=neurons)
 
                                 neurons = m.all_neurons()
+                                step_counter = m.step_counter
+                                
+                                print("Training step: ", step_counter)
                                 # print("neurons: ", neurons)
                                 if save_neuron_values == True:
                                         np.save(f'neurons_{lap}_{xdim}{ydim}_{alpha}_{train}_{split_index1}-{split_index2}-{split_index3}.npy', neurons, allow_pickle=True)
@@ -160,7 +163,7 @@ def batch_training(full_data, xdim, ydim, alpha, train, batch, feature_list, sav
                                 
                                 # print changes in neuron weights
                                 neuron_weights = m.weight_history
-                                term = m.final_epoch
+                                # term = m.final_epoch
                                 history.extend(neuron_weights)
                                 # np.save(f'evolution_{lap}_{xdim}{ydim}_{alpha}_{term}_{split_index1}-{split_index2}-{split_index3}.npy', neuron_weights, allow_pickle=True)
 
