@@ -249,7 +249,7 @@ parser.add_argument("--conf_name", type=str, dest='configuration_name', default=
 parser.add_argument("--snapshot", type=int, dest='lap', default=2800)
 parser.add_argument("--scale", dest='scale', action='store_true', help="Scale the dataset")
 parser.add_argument("--crop", type=tuple, dest='crop', default=None)
-parser.add_argument("-v", "--var", nargs='+', type=str, dest='var', default=['b_perp', 'j_perp', 'j_par', 'e_perp'])
+parser.add_argument("-v", "--var", nargs='+', action="store", type=str, dest='var', default=['b_perp', 'j_perp', 'j_par', 'e_perp'])
 
 args_cli = parser.parse_args()
     
@@ -283,6 +283,9 @@ if __name__ == "__main__":
 
     # lap = [args_cli.lap]
     lap = args_cli.lap
+    
+    list_of_features = args_cli.var
+    print("List of features : ", list_of_features)
 
     # --------------------------------------------------
     print(fname_fld)
@@ -315,7 +318,7 @@ if __name__ == "__main__":
     ey /= get_normalization("ey", conf)
     ez /= get_normalization("ez", conf)
 
-    print("Shape of the datacube : ", np.shape(rho))
+    print("Shape of the datacube : ", np.shape(rho), flush=True)
     nx, ny, nz = np.shape(rho)
 
     # --------------------------------------------------
@@ -351,7 +354,7 @@ if __name__ == "__main__":
     b_dot_e = np.einsum('nijk,nijk->ijk', b_vec, e_vec)
     e_dot_j = np.einsum('nijk,nijk->ijk', e_vec, j_vec)
     
-    print("Finished computing base features")
+    print("Finished computing base features", flush=True)
     
     j_par = b_dot_j / b_mag
     j_perp2 = j_mag*j_mag - j_par*j_par # there is a small negative residual before taking the square root, so reset the negative values to zero
@@ -365,29 +368,37 @@ if __name__ == "__main__":
     rho /= get_normalization("rho", conf)
     rho = rho.clip(0.0, 18000)
     
-    print("Finished computing derived features")
+    print("Finished computing derived features", flush=True)
     
-    convolution_size = 4
-    kernel_iso_shape = (3,3,3)
-    kernel_iso = np.ones(shape=kernel_iso_shape)
-    kernel_iso /= np.sum(kernel_iso)
+    # isotropic convolution
+    convolution_on = False
+    for name in list_of_features:
+        if "ciso" in name:
+            convolution_on = True
+            print("Isotropic convolution requested", flush=True)
+            break
+            
+    if convolution_on:
+        convolution_size = 4
+        kernel_iso_shape = (3,3,3)
+        kernel_iso = np.ones(shape=kernel_iso_shape)
+        kernel_iso /= np.sum(kernel_iso)
 
-    j_par_ciso = pseudo_convolution(j_par, kernel_iso, step_size=convolution_size)
-    j_perp_ciso = pseudo_convolution(j_perp, kernel_iso, step_size=convolution_size)
-    e_par_ciso = pseudo_convolution(e_par, kernel_iso, step_size=convolution_size)
-    e_perp_ciso = pseudo_convolution(e_perp, kernel_iso, step_size=convolution_size)
-    bz_ciso = pseudo_convolution(bz, kernel_iso, step_size=convolution_size)
-    b_perp_ciso = pseudo_convolution(b_perp, kernel_iso, step_size=convolution_size)
-    e_dot_j_ciso = pseudo_convolution(e_dot_j, kernel_iso, step_size=convolution_size)
-    rho_ciso = pseudo_convolution(rho, kernel_iso, step_size=convolution_size)
+        j_par_ciso = pseudo_convolution(j_par, kernel_iso, step_size=convolution_size)
+        j_perp_ciso = pseudo_convolution(j_perp, kernel_iso, step_size=convolution_size)
+        e_par_ciso = pseudo_convolution(e_par, kernel_iso, step_size=convolution_size)
+        e_perp_ciso = pseudo_convolution(e_perp, kernel_iso, step_size=convolution_size)
+        bz_ciso = pseudo_convolution(bz, kernel_iso, step_size=convolution_size)
+        b_perp_ciso = pseudo_convolution(b_perp, kernel_iso, step_size=convolution_size)
+        e_dot_j_ciso = pseudo_convolution(e_dot_j, kernel_iso, step_size=convolution_size)
+        rho_ciso = pseudo_convolution(rho, kernel_iso, step_size=convolution_size)
+        
+        print("Finished computing isotropic convolution features", flush=True)
     
-    print("Finished computing isotropic convolution features")
-    
-    ### CHANGE THIS LINE TO GET THE CORRECT FEATURE SET ###
-    list_of_features = args_cli.var
+    ### FEATURE SET ###
     dataset_combined = np.array([globals()[list_of_features[i]] for i in range(len(list_of_features))])
     #######################################################
-    print("Dataset contains : ", args_cli.var)
+    print("Dataset contains : ",list_of_features, flush=True)
     
     if args_cli.crop is not None: # save memory by carving out a smaller domain
         start_index_crop = args_cli.crop[0]
@@ -418,7 +429,7 @@ if __name__ == "__main__":
     asciilist = [n.encode("ascii", "ignore") for n in list_of_features]
     dsetf = f5.create_dataset("names",  data=asciilist)
     f5.close()
-    print("Saved dataset as ")
+    print("Saved dataset to {}".format(GetH5FileName(list_of_features, lap)), flush=True)
     
     
     

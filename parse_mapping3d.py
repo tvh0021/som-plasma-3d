@@ -82,6 +82,9 @@ if __name__ == '__main__':
     # compute the derivative of the gsum values to find the drop
     gsum_deriv = savgol_filter(smoothed_map, len(map_list)//smooth_fraction, order, deriv=1) / smoothed_map
     
+    if True:
+        np.save(f"{args.file_path}/gsum_deriv_smoothed_{smooth_fraction}_{order}.npy", gsum_deriv)
+    
     # iterate through the derivative and find the local minima
     threshold = args.threshold
     
@@ -92,7 +95,7 @@ if __name__ == '__main__':
         plt.figure(dpi=300)
         plt.plot(cluster_order, gsum_deriv, marker='o', c='k', markersize=2, linewidth=1)
         # plt.yscale('log')
-        plt.ylim(min(gsum_deriv) / 8, 0.0)
+        plt.ylim(min(gsum_deriv) / 3, 0.0)
         plt.title(f"Sorted gsum derivatives")
         plt.xlabel("Ranked clusters")
         plt.ylabel("Gsum derivative")

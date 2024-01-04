@@ -11,10 +11,10 @@ parser.add_argument('--save_neuron_values', dest='save_neuron_values', action='s
 args = parser.parse_args()
 
 path = args.script_location
-xdim = list(range(10, 21, 5))
-alpha = [0.05, 0.1, 0.5]
-train = [10000, 50000, 100000]
-batch = [0]
+xdim = list(range(15, 21, 5))
+alpha = [0.1, 0.2, 0.4]
+train = [100000, 500000, 2500000]
+batch = [160, 320]
 save_neuron_values = False
 features_path = args.features_path
 file = args.file
