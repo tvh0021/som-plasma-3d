@@ -10,9 +10,7 @@ from random import sample
 # The following line improves formatting when ouputting NumPy arrays.
 np.set_printoptions(linewidth = 200)
 
-from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -34,11 +32,6 @@ from initialize_turbulence import Configuration_Turbulence as Configuration
 # import pyvista as pv
 # pv.global_theme.anti_aliasing = "msaa"
 # pv.global_theme.background = 'black'
-
-import plotly.graph_objects as go
-import plotly.express as px
-import plotly.io as pio
-pio.renderers.default = "browser"
 
 from scipy import ndimage
 
@@ -227,7 +220,7 @@ def pseudo_convolution(variable, kernel, step_size : int):
 
     return pseudo_value
 
-def GetH5FileName(feature_list, snapshot):
+def GetH5FileName(feature_list, snapshot, kwargs=[]):
     number_of_rhos = 0
     number_of_js = 0
     number_of_bs = 0
@@ -241,90 +234,124 @@ def GetH5FileName(feature_list, snapshot):
             number_of_bs += 1
         elif i[0] == "e":
             number_of_es += 1
-    return "features_{}j{}b{}e{}r_{}.h5".format(number_of_js, number_of_bs, number_of_es, number_of_rhos, snapshot)
+    
+    if len(kwargs) > 0:
+        str_kwargs = ""
+        for key in kwargs:
+            str_kwargs += "_{}".format(key)
+        return "features_{}j{}b{}e{}r_{}{}.h5".format(number_of_js, number_of_bs, number_of_es, number_of_rhos, snapshot, str_kwargs)
+    else:
+        return "features_{}j{}b{}e{}r_{}.h5".format(number_of_js, number_of_bs, number_of_es, number_of_rhos, snapshot)
     
 parser = argparse.ArgumentParser(description='obtain the feature set for SOM training with this script')
 parser.add_argument("--conf_path", type=str, dest='configuration_path', default='/mnt/ceph/users/tha10/sim_snapshots/')
 parser.add_argument("--conf_name", type=str, dest='configuration_name', default='x16.ini')
+parser.add_argument("--generic_file", dest='generic_file', action='store_true', help="Use generic file shape, made specifically for Harris sheet simulations")
 parser.add_argument("--snapshot", type=int, dest='lap', default=2800)
 parser.add_argument("--scale", dest='scale', action='store_true', help="Scale the dataset")
+parser.add_argument("--b_guide", type=str, dest='guide', default='z') # guide field direction
 parser.add_argument("--crop", type=tuple, dest='crop', default=None)
+parser.add_argument("--downsample", type=int, dest='downsample', default=1)
 parser.add_argument("-v", "--var", nargs='+', action="store", type=str, dest='var', default=['b_perp', 'j_perp', 'j_par', 'e_perp'])
 
 args_cli = parser.parse_args()
     
 if __name__ == "__main__":
     do_print = False
-    os.chdir(args_cli.configuration_path)
-
-    # args_cli = pytools.parse_args()
-    conf_filename = args_cli.configuration_path + args_cli.configuration_name
-    conf = Configuration(conf_filename, do_print=do_print)
-    # var = args_cli.var # NOTE uncomment for basic functionality
-    var = "jpar"  # manually set the plotted variable
-
-    # general defaults
-    args = {}
-    for key in default_values:
-        args[key] = default_values[key]
-
-    # overwrite with turbulence defaults
-    try:
-        for key in default_turbulence_values[var]:
-            args[key] = default_turbulence_values[var][key]
-    except:
-        pass
-
-    print("File location : ", conf.outdir)
-    # print("plotting {}".format(var))
-
-    fname_fld = args["file"]
-    fname_prtcls = "test-prtcls"
-
-    # lap = [args_cli.lap]
     lap = args_cli.lap
     
-    list_of_features = args_cli.var
-    print("List of features : ", list_of_features)
+    if not args_cli.generic_file:
+        os.chdir(args_cli.configuration_path)
 
-    # --------------------------------------------------
-    print(fname_fld)
-    rho = read_full_box(conf.outdir, fname_fld, "rho", lap).T
+        # args_cli = pytools.parse_args()
+        conf_filename = args_cli.configuration_path + args_cli.configuration_name
+        conf = Configuration(conf_filename, do_print=do_print)
+        # var = args_cli.var # NOTE uncomment for basic functionality
+        var = "jpar"  # manually set the plotted variable
 
-    jx = read_full_box(conf.outdir, fname_fld, "jx", lap).T
-    jy = read_full_box(conf.outdir, fname_fld, "jy", lap).T
-    jz = read_full_box(conf.outdir, fname_fld, "jz", lap).T
+        # general defaults
+        args = {}
+        for key in default_values:
+            args[key] = default_values[key]
 
-    bx = read_full_box(conf.outdir, fname_fld, "bx", lap).T
-    by = read_full_box(conf.outdir, fname_fld, "by", lap).T
-    bz = read_full_box(conf.outdir, fname_fld, "bz", lap).T
+        # overwrite with turbulence defaults
+        try:
+            for key in default_turbulence_values[var]:
+                args[key] = default_turbulence_values[var][key]
+        except:
+            pass
 
-    ex = read_full_box(conf.outdir, fname_fld, "ex", lap).T
-    ey = read_full_box(conf.outdir, fname_fld, "ey", lap).T
-    ez = read_full_box(conf.outdir, fname_fld, "ez", lap).T
+        print("File location : ", conf.outdir)
+        # print("plotting {}".format(var))
 
-    # normalize
-    rho /= get_normalization("rho", conf)
+        fname_fld = args["file"]
+        fname_prtcls = "test-prtcls"
 
-    jx /= get_normalization("jx", conf)
-    jy /= get_normalization("jy", conf)
-    jz /= get_normalization("jz", conf)
+        # --------------------------------------------------
+        print(fname_fld)
+        rho = read_full_box(conf.outdir, fname_fld, "rho", lap).T
 
-    bx /= get_normalization("bx", conf)
-    by /= get_normalization("by", conf)
-    bz /= get_normalization("bz", conf)
+        jx = read_full_box(conf.outdir, fname_fld, "jx", lap).T
+        jy = read_full_box(conf.outdir, fname_fld, "jy", lap).T
+        jz = read_full_box(conf.outdir, fname_fld, "jz", lap).T
 
-    ex /= get_normalization("ex", conf)
-    ey /= get_normalization("ey", conf)
-    ez /= get_normalization("ez", conf)
+        bx = read_full_box(conf.outdir, fname_fld, "bx", lap).T
+        by = read_full_box(conf.outdir, fname_fld, "by", lap).T
+        bz = read_full_box(conf.outdir, fname_fld, "bz", lap).T
+
+        ex = read_full_box(conf.outdir, fname_fld, "ex", lap).T
+        ey = read_full_box(conf.outdir, fname_fld, "ey", lap).T
+        ez = read_full_box(conf.outdir, fname_fld, "ez", lap).T
+
+        # normalize
+        rho /= get_normalization("rho", conf)
+
+        jx /= get_normalization("jx", conf)
+        jy /= get_normalization("jy", conf)
+        jz /= get_normalization("jz", conf)
+
+        bx /= get_normalization("bx", conf)
+        by /= get_normalization("by", conf)
+        bz /= get_normalization("bz", conf)
+
+        ex /= get_normalization("ex", conf)
+        ey /= get_normalization("ey", conf)
+        ez /= get_normalization("ez", conf)
+        
+        dx = conf.stride / conf.c_omp  # skindepth resolution
+        
+        # rho is weirdly distributed, so we need to do some preprocessing
+        rho = read_full_box(conf.outdir, fname_fld, "rho", lap).T
+        rho /= get_normalization("rho", conf)
+        rho = rho.clip(0.0, 18000)
+    else:
+        os.chdir(args_cli.configuration_path)
+        filename = args_cli.configuration_path + "harris_sheet_00{}.h5".format(str(args_cli.lap))
+        print("File location : ", filename)
+        
+        f_out = h5.File(filename, "r")
+        
+        jx = f_out["jx"][()]
+        jy = f_out["jy"][()]
+        jz = f_out["jz"][()]
+        
+        bx = f_out["bx"][()]
+        by = f_out["by"][()]
+        bz = f_out["bz"][()]
+        
+        ex = f_out["ex"][()]
+        ey = f_out["ey"][()]
+        ez = f_out["ez"][()]
+        
+        rho = f_out["rho"][()]
+        
+        dx = 1.
+        
 
     print("Shape of the datacube : ", np.shape(rho), flush=True)
-    nx, ny, nz = np.shape(rho)
+    nz, ny, nx = np.shape(rho)
 
-    # --------------------------------------------------
-    # create pyvista object
-
-    dx = conf.stride / conf.c_omp  # skindepth resolution
+    
     origin = 0, 0, 0
 
     Lx = nx * dx
@@ -340,10 +367,13 @@ if __name__ == "__main__":
     j_mag = np.sqrt(jx**2 + jy**2 + jz**2)
     e_mag = np.sqrt(ex**2 + ey**2 + ez**2)
 
-    # perpendicular components, commented out for the cell below
-    b_perp = np.sqrt(bx**2 + by**2)
-    # j_perp = np.sqrt(jx**2 + jy**2)
-    # e_perp = np.sqrt(ex**2 + ey**2)
+    # perpendicular components
+    if args_cli.guide == 'z':
+        b_perp = np.sqrt(bx**2 + by**2)
+    elif args_cli.guide == 'x':
+        b_perp = np.sqrt(by**2 + bz**2)
+    elif args_cli.guide == 'y':
+        b_perp = np.sqrt(bx**2 + bz**2)
 
     # dot products
     b_vec = np.array([bx, by, bz])
@@ -357,18 +387,17 @@ if __name__ == "__main__":
     print("Finished computing base features", flush=True)
     
     j_par = b_dot_j / b_mag
+    j_par_abs = np.abs(j_par)
     j_perp2 = j_mag*j_mag - j_par*j_par # there is a small negative residual before taking the square root, so reset the negative values to zero
     j_perp2[j_perp2 < 0.] = 0.
     j_perp = np.sqrt(j_perp2)
     e_par = b_dot_e / b_mag
     e_perp = np.sqrt(e_mag*e_mag - e_par*e_par)
     
-    # rho is weirdly distributed, so we need to do some preprocessing
-    rho = read_full_box(conf.outdir, fname_fld, "rho", lap).T
-    rho /= get_normalization("rho", conf)
-    rho = rho.clip(0.0, 18000)
-    
     print("Finished computing derived features", flush=True)
+    
+    list_of_features = args_cli.var
+    # print("List of features : ", list_of_features)
     
     # isotropic convolution
     convolution_on = False
@@ -383,8 +412,10 @@ if __name__ == "__main__":
         kernel_iso_shape = (3,3,3)
         kernel_iso = np.ones(shape=kernel_iso_shape)
         kernel_iso /= np.sum(kernel_iso)
-
+        
+        j_mag_ciso = pseudo_convolution(j_mag, kernel_iso, step_size=convolution_size)
         j_par_ciso = pseudo_convolution(j_par, kernel_iso, step_size=convolution_size)
+        j_par_abs_ciso = pseudo_convolution(j_par_abs, kernel_iso, step_size=convolution_size)
         j_perp_ciso = pseudo_convolution(j_perp, kernel_iso, step_size=convolution_size)
         e_par_ciso = pseudo_convolution(e_par, kernel_iso, step_size=convolution_size)
         e_perp_ciso = pseudo_convolution(e_perp, kernel_iso, step_size=convolution_size)
@@ -400,19 +431,36 @@ if __name__ == "__main__":
     #######################################################
     print("Dataset contains : ",list_of_features, flush=True)
     
-    if args_cli.crop is not None: # save memory by carving out a smaller domain
+    additional_kws = []
+    
+    if "j_mag" in list_of_features:
+        additional_kws.append("jmag")
+    if "j_par_abs" in list_of_features:
+        additional_kws.append("jpa")
+    if args_cli.guide != 'z':
+        additional_kws.append("bg" + args_cli.guide)
+    
+    if args_cli.crop is not None and nx == ny == nz: # save memory by carving out a smaller domain
         start_index_crop = args_cli.crop[0]
         width_of_new_domain = args_cli.crop[1]
         dataset_reduced = np.zeros((dataset_combined.shape[0], width_of_new_domain, width_of_new_domain, width_of_new_domain))
         for i in range(dataset_combined.shape[0]):
             dataset_reduced[i,:,:,:] = get_smaller_domain(dataset_combined[i,:,:,:], new_width=width_of_new_domain, start_index=start_index_crop)
+        additional_kws.append(f'c{start_index_crop}-{width_of_new_domain}')
     else:
         start_index_crop = 0
         width_of_new_domain = nx
         dataset_reduced = dataset_combined
+        
+    if args_cli.downsample > 1: # downsample the dataset
+        start_index_crop = 0
+        dataset_reduced = dataset_reduced[:,::args_cli.downsample,::args_cli.downsample,::args_cli.downsample]
+        width_of_new_domain = dataset_reduced.shape[1]
+        additional_kws.append(f'd{args_cli.downsample}')
+        print("Downsampled dataset by factor of {}".format(args_cli.downsample), flush=True)
 
 
-    dataset_reshaped = np.reshape(dataset_reduced, (dataset_reduced.shape[0], width_of_new_domain**3)).T
+    dataset_reshaped = np.reshape(dataset_reduced, (dataset_reduced.shape[0], dataset_reduced.shape[1]*dataset_reduced.shape[2]*dataset_reduced.shape[3])).T
 
     if args_cli.scale == True: # scale dataset
         scaler = StandardScaler()
@@ -422,15 +470,11 @@ if __name__ == "__main__":
         dataset_scaled = dataset_reshaped
          
     # save the dataset
-    f5 = h5.File(GetH5FileName(list_of_features, lap), 'w')
+    f5 = h5.File(GetH5FileName(list_of_features, lap, kwargs=additional_kws), 'w')
     dsetx = f5.create_dataset("features",  data=dataset_scaled)
     # dsety = f5.create_dataset("target",  data=targets)
 
     asciilist = [n.encode("ascii", "ignore") for n in list_of_features]
     dsetf = f5.create_dataset("names",  data=asciilist)
     f5.close()
-    print("Saved dataset to {}".format(GetH5FileName(list_of_features, lap)), flush=True)
-    
-    
-    
-    
+    print("Saved dataset to {}".format(GetH5FileName(list_of_features, lap, kwargs=additional_kws)), flush=True)

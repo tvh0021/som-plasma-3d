@@ -14,11 +14,9 @@ parser.add_argument("--save_combined_map", dest='save_combined_map', action='sto
 parser.add_argument("--threshold", type=float, dest='threshold', default=-0.015, help="Threshold for the derivative of the gsum values")
 parser.add_argument("--reference_file", type=str, dest='reference_file', default='/mnt/home/tha10/ceph/SOM-tests/pipeline-test/features_2j1b1e0r_2800.h5', help="Reference file to compare the clusters to", required=False)
 parser.add_argument('--slice', type=int, dest='slice', default=580, help='Slice number, make sure this matches the slice number in the sce_slice.py call')
+parser.add_argument("--ndim", type=int, dest='ndim', default=640, help="Number of voxels in each dimension")
 args = parser.parse_args()
 
-# @njit(parallel=True)
-# def addBinaryMaps (current_map : np.ndarray, add_map : np.ndarray) -> np.ndarray:
-#     return current_map + add_map
     
 
 def makeFilename (n : int) -> str:
@@ -157,7 +155,7 @@ if __name__ == '__main__':
         
         # add values of the binary map of each cluster to obtain a new map
         # read in the binary map
-        nd = 128
+        nd = args.ndim
         all_binary_maps = np.empty((len(remapped_clusters),nd, nd, nd), dtype=np.float32)
         for cluster in remapped_clusters.keys():
             # diagnostic
@@ -190,7 +188,7 @@ if __name__ == '__main__':
         nx = int(np.cbrt(all_data.shape[0]))
         ny = nx
         nz = nx
-        j_par = np.reshape(all_data[:,feature_names == b'j_par'], newshape=[nx,ny,nz])
+        j_par = np.reshape(all_data[:,feature_names == b'j_par'] if b'j_par' in feature_names else all_data[:,feature_names == b'j_par_abs'], newshape=[nx,ny,nz])
         slice_number = args.slice
         
         number_of_clusters = all_binary_maps.shape[0]
